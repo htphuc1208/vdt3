@@ -190,3 +190,81 @@ HISTORICAL_INCIDENTS: list[dict] = [
         "resolution": "Interference hunt located and removed the source (SOP-RAN-INTERFERENCE).",
     },
 ]
+
+# --------------------------------------------------------------------------- #
+# Distractor knowledge: plausible SOPs / incidents for failure modes NOT in the
+# scenario set. Used (opt-in) to make retrieval non-trivial and to test that the
+# system does not simply read the answer key. They never match a scenario exactly.
+# --------------------------------------------------------------------------- #
+DISTRACTOR_SOPS: list[dict] = [
+    {
+        "id": "SOP-RAN-HANDOVER-FAILURE", "title": "Elevated handover failure rate",
+        "domain": "RAN",
+        "symptoms": "Rising X2/Xn handover failures and ping-pong between neighbours; drops at cell edge.",
+        "steps": ["Check neighbour relations and mobility thresholds.", "Audit handover parameters.",
+                  "Re-tune hysteresis/TTT.", "Verify handover success recovers."],
+    },
+    {
+        "id": "SOP-RAN-GPS-SYNC-LOSS", "title": "GNSS/GPS synchronisation loss",
+        "domain": "RAN",
+        "symptoms": "Cell holdover alarm, timing drift, TDD interference between cells after holdover expiry.",
+        "steps": ["Check GNSS receiver and antenna.", "Confirm holdover status.",
+                  "Restore GNSS or PTP timing source.", "Verify sync alarm clears."],
+    },
+    {
+        "id": "SOP-TRANSPORT-BGP-FLAP", "title": "BGP session flapping",
+        "domain": "TRANSPORT",
+        "symptoms": "Repeated BGP session up/down, route churn, intermittent reachability.",
+        "steps": ["Check BGP neighbour logs and timers.", "Inspect underlying link stability.",
+                  "Dampen or fix the flapping session.", "Verify routing stabilises."],
+    },
+    {
+        "id": "SOP-TRANSPORT-MTU-BLACKHOLE", "title": "MTU/blackhole path issue",
+        "domain": "TRANSPORT",
+        "symptoms": "Small packets pass but large transfers stall; PMTUD blackhole on a path.",
+        "steps": ["Test with varying packet sizes.", "Locate the low-MTU hop.",
+                  "Fix MTU / clamp MSS.", "Verify large transfers complete."],
+    },
+    {
+        "id": "SOP-CORE-CERT-EXPIRY", "title": "TLS certificate expiry on a core NF",
+        "domain": "CORE",
+        "symptoms": "Handshake failures after a certificate expired; interface down with TLS errors.",
+        "steps": ["Check certificate validity dates.", "Rotate/renew the certificate.",
+                  "Reload the service.", "Verify secure interfaces recover."],
+    },
+    {
+        "id": "SOP-CORE-DB-REPLICATION-LAG", "title": "Subscriber DB replication lag",
+        "domain": "CORE",
+        "symptoms": "UDM/UDR stale reads, inconsistent subscriber state, elevated read latency.",
+        "steps": ["Check replication lag metrics.", "Identify the slow replica/link.",
+                  "Resync or fail over the replica.", "Verify consistency restored."],
+    },
+    {
+        "id": "SOP-POWER-HVAC-OVERTEMP", "title": "Shelter HVAC over-temperature",
+        "domain": "POWER",
+        "symptoms": "Rising equipment temperature, thermal alarms, risk of thermal shutdown (mains OK).",
+        "steps": ["Check HVAC unit status.", "Confirm airflow / filters.",
+                  "Restore cooling or add portable AC.", "Verify temperature normalises."],
+    },
+]
+
+DISTRACTOR_INCIDENTS: list[dict] = [
+    {
+        "id": "HIST-2024-0888", "fault_type": "HANDOVER_FAILURE", "domain": "RAN",
+        "symptoms": "Handover failure spike and ping-pong at a cell boundary after a neighbour change.",
+        "root_cause": "Mis-set mobility hysteresis.",
+        "resolution": "Re-tuned handover thresholds (SOP-RAN-HANDOVER-FAILURE).",
+    },
+    {
+        "id": "HIST-2024-0899", "fault_type": "GPS_SYNC_LOSS", "domain": "RAN",
+        "symptoms": "Holdover alarm then TDD cross-interference after GNSS loss.",
+        "root_cause": "GNSS antenna water ingress.",
+        "resolution": "Restored GNSS timing (SOP-RAN-GPS-SYNC-LOSS).",
+    },
+    {
+        "id": "HIST-2024-0912", "fault_type": "CERT_EXPIRY", "domain": "CORE",
+        "symptoms": "TLS handshake failures on a core interface at midnight UTC.",
+        "root_cause": "Expired service certificate.",
+        "resolution": "Rotated the certificate (SOP-CORE-CERT-EXPIRY).",
+    },
+]

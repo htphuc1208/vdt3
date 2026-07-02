@@ -1,6 +1,7 @@
 """Scoring a pipeline result against a scenario's ground truth."""
 from __future__ import annotations
 
+import re
 from statistics import mean
 
 from ..environment.scenarios import Scenario
@@ -11,6 +12,40 @@ def _norm(text: str | None) -> str:
     return (text or "").strip().upper().replace(" ", "_").replace("-", "_")
 
 
+def _spaces(text: str | None) -> str:
+    return re.sub(r"[_\-]+", " ", (text or "").strip().lower())
+
+
+# Semantic aliases for each canonical fault family. A prediction is credited if it
+# either matches the canonical enum exactly OR mentions any defining alias of the
+# TRUE family. This measures diagnostic capability (the correct failure family),
+# NOT exact-enum string compliance — so a baseline that says "MAINS_FAIL" or
+# "HIGH_CPU" is scored fairly against the multi-agent system that emits the enum.
+FAULT_TYPE_ALIASES: dict[str, list[str]] = {
+    "FIBER_CUT": ["fiber", "fibre", "los", "loss of signal", "optical", "backhaul cut", "link cut"],
+    "CELL_OUTAGE": ["cell down", "cell outage", "cell out of service", "cell unavailable", "rru fail", "rru fault", "radio unit fail"],
+    "CONGESTION": ["congestion", "prb", "high load", "radio congestion", "capacity exhaust", "admission control"],
+    "MISCONFIG": ["misconfig", "misconfiguration", "config mismatch", "configuration error", "bad config", "config change", "rollback"],
+    "HARDWARE_FAILURE": ["hardware", "line card", "linecard", "card fault", "card failure", "crc error", "faulty card"],
+    "POWER_OUTAGE": ["power", "mains", "battery", "rectifier", "site power", "ac fail"],
+    "CORE_OVERLOAD": ["overload", "cpu", "compute", "resource exhaust", "high cpu", "saturation", "throttl"],
+    "DNS_FAILURE": ["dns", "servfail", "resolver", "name resolution", "resolution fail"],
+    "LICENSE_EXHAUSTION": ["license", "licence", "entitlement", "license limit", "user limit", "license exhaust"],
+    "INTERFERENCE": ["interference", "bler", "noise floor", "uplink noise", "rf interference", "external rf"],
+}
+
+
+def fault_type_match(predicted: str | None, true_fault_type: str) -> bool:
+    """Fair semantic match of a predicted fault type against the true family."""
+    if not predicted:
+        return False
+    if _norm(predicted) == _norm(true_fault_type):
+        return True
+    aliases = FAULT_TYPE_ALIASES.get(_norm(true_fault_type), [])
+    text = _spaces(predicted)
+    return any(alias in text for alias in aliases)
+
+
 def score_result(result: PipelineResult, scenario: Scenario) -> dict:
     cons = result.consensus
     faulty = cons.faulty_element_id if cons else None
@@ -18,7 +53,7 @@ def score_result(result: PipelineResult, scenario: Scenario) -> dict:
     root_cause = (cons.root_cause if cons else "") or ""
 
     localization = faulty == scenario.element_id
-    fault_type_correct = _norm(fault_type) == _norm(scenario.fault_type)
+    fault_type_correct = fault_type_match(fault_type, scenario.fault_type)
     kws = [k.lower() for k in scenario.root_cause_keywords]
     matched = sum(1 for k in kws if k in root_cause.lower())
     root_cause_correct = matched >= 1

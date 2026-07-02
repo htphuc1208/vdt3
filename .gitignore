@@ -5,4 +5,7 @@ __pycache__/
 .llm_cache/
 .pytest_cache/
 results/*.json
+data/openrca/**
+!data/openrca/.gitkeep
+data/rcaeval
 .DS_Store

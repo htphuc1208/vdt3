@@ -96,7 +96,7 @@ def _print_result(result: PipelineResult, scenario_id: str | None) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run a telecom incident through TelcoMAS")
     parser.add_argument("--scenario", help="scenario id (see --list)")
-    parser.add_argument("--mode", choices=["multi", "single"], default="multi")
+    parser.add_argument("--mode", choices=["multi", "single", "no_rag", "no_consensus", "no_arbiter"], default="multi")
     parser.add_argument("--list", action="store_true", help="list available scenarios")
     parser.add_argument("--trace", action="store_true", help="print the full agent trace")
     args = parser.parse_args(argv)

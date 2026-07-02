@@ -10,7 +10,8 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 
-from .kb_data import HISTORICAL_INCIDENTS, SOP_LIBRARY
+from .kb_data import (DISTRACTOR_INCIDENTS, DISTRACTOR_SOPS, HISTORICAL_INCIDENTS,
+                      SOP_LIBRARY)
 
 _TOKEN = re.compile(r"[a-z0-9]+")
 
@@ -78,6 +79,29 @@ def _incident_document(inc: dict) -> Document:
     return Document(id=inc["id"], kind="incident", text=text, meta=inc)
 
 
-def build_default_retriever() -> TfidfRetriever:
-    docs = [_sop_document(s) for s in SOP_LIBRARY] + [_incident_document(i) for i in HISTORICAL_INCIDENTS]
+def build_retriever(
+    include_distractors: bool = False,
+    exclude_sop_ids: set[str] | None = None,
+    exclude_incident_fault_types: set[str] | None = None,
+) -> TfidfRetriever:
+    """Build a retriever with optional distractors and held-out documents.
+
+    * ``include_distractors`` adds plausible off-target SOPs/incidents (harder retrieval).
+    * ``exclude_sop_ids`` / ``exclude_incident_fault_types`` implement a hold-out control
+      that removes the exactly-matching answer from the knowledge base.
+    """
+    exclude_sop_ids = exclude_sop_ids or set()
+    exclude_incident_fault_types = exclude_incident_fault_types or set()
+
+    sops = [s for s in SOP_LIBRARY if s["id"] not in exclude_sop_ids]
+    incidents = [i for i in HISTORICAL_INCIDENTS if i.get("fault_type") not in exclude_incident_fault_types]
+    if include_distractors:
+        sops = sops + [s for s in DISTRACTOR_SOPS if s["id"] not in exclude_sop_ids]
+        incidents = incidents + DISTRACTOR_INCIDENTS
+
+    docs = [_sop_document(s) for s in sops] + [_incident_document(i) for i in incidents]
     return TfidfRetriever(docs)
+
+
+def build_default_retriever() -> TfidfRetriever:
+    return build_retriever()

@@ -1,0 +1,15 @@
+# Heavy dependencies for paper-grade external benchmarks.
+# Keep requirements.txt small for the demo/runtime path.
+
+-r requirements.txt
+
+pandas>=2.0
+numpy>=1.26
+scipy>=1.10
+scikit-learn>=1.3
+networkx>=3.0
+scikit-network>=0.31
+gdown>=5.0
+
+# Optional Kaggle fallback. Requires ~/.kaggle/kaggle.json.
+kaggle>=1.6

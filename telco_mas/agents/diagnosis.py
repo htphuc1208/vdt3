@@ -78,7 +78,7 @@ class DiagnosisAgent(BaseAgent):
         self.profile = profile
         self.name = profile.key
 
-    def run(self, incident: Incident, triage: TriageResult, correlation_notes: str):
+    def run(self, incident: Incident, triage: TriageResult, correlation_notes: str, tool_names=None):
         system = SYSTEM_TMPL.format(
             title=self.profile.title, scope=self.profile.scope, fault_types=", ".join(FAULT_TYPES)
         )
@@ -87,7 +87,7 @@ class DiagnosisAgent(BaseAgent):
             + f"\n\nTriage: severity={triage.severity.value}, suspected_domain={triage.suspected_domain.value}."
             + f"\nKnowledge correlation:\n{correlation_notes}"
         )
-        run = self.invoke(system, user)
+        run = self.invoke(system, user, tool_names=tool_names)
         d = run.data
         hyp = Hypothesis(
             proposed_by=self.profile.key,

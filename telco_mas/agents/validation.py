@@ -30,7 +30,7 @@ class ValidationAgent(BaseAgent):
         )
         run = self.invoke(SYSTEM, user)
         d = run.data
-        resolved = bool(d.get("resolved", False))
+        resolved = self.ctx.sim.is_healthy()
         result = ValidationResult(
             resolved=resolved,
             notes=as_str(d.get("notes")),

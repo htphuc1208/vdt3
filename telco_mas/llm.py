@@ -95,13 +95,19 @@ class LLMClient:
         settings: Optional[Settings] = None,
         responder: Optional[Responder] = None,
         cache_enabled: Optional[bool] = None,
+        cache_only: bool = False,
     ) -> None:
         self.settings = settings or get_settings()
         self._responder = responder
         self._client = None  # lazily created OpenAI client
+        # cache_only replays cached completions and refuses to make live calls —
+        # useful for reproducing a benchmark offline without spending tokens.
+        self.cache_only = cache_only
         self.cache_enabled = (
             self.settings.cache_enabled if cache_enabled is None else cache_enabled
         )
+        if cache_only:
+            self.cache_enabled = True
         if self.cache_enabled:
             os.makedirs(self.settings.cache_dir, exist_ok=True)
 
@@ -151,6 +157,13 @@ class LLMClient:
             if os.path.exists(cache_file):
                 with open(cache_file) as fh:
                     return _response_from_dict(json.load(fh))
+
+        if self.cache_only and self._responder is None:
+            raise LLMError(
+                "cache_only: no cached response for this request. The prompt/tools changed "
+                "since the cache was built, so replaying it offline is not possible — re-run "
+                "this configuration live (with an API key and without --cache-only)."
+            )
 
         if self._responder is not None:
             msg = self._responder(messages, tools)

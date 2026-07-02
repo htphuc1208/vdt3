@@ -1,209 +1,323 @@
-<div align="center">
+# TelcoMAS: Tool-Grounded Multi-Agent Root-Cause Analysis with Calibrated Consensus
 
-# TelcoMAS: A Multi-Agent LLM System for Root-Cause Analysis and Remediation of Telecom Network Incidents
+**Artifact status.** This manuscript is the research-track version of the
+TelcoMAS report. The original short VDT report is preserved as
+`report/report_vdt2026.md`.
 
-**[Student full name]**, **[Mentor full name]**<sup>1</sup>
+## Abstract
 
-<sup>1</sup> *[Mentor unit] — [mentor email]*
+Root-cause analysis (RCA) in telecom and cloud operations requires reasoning over
+alarm storms, time-varying KPIs, logs, topology, and operational playbooks. We
+present **TelcoMAS**, a tool-grounded multi-agent RCA prototype that decomposes
+incident handling into triage, knowledge correlation, domain-specialist
+diagnosis, calibrated consensus, remediation, and validation. The system is
+motivated by ReAct-style reasoning/action loops, recent LLM-agent RCA studies,
+SOP-guided multi-agent workflows, and tool-assisted multimodal RCA. Its main
+engineering contribution is an auditable, mABC-inspired calibrated
+evidence-weighted consensus heuristic over domain experts, with an arbiter used
+only when the vote margin is low. We evaluate TelcoMAS on a deterministic 5G
+incident simulator and add adapters for public RCA benchmarks: RCAEval and
+OpenRCA. Current artifact tests pass end-to-end, RCAEval is linked and validated
+at 735 cases, and OpenRCA is integrated in a staged manner for resource-aware
+future runs.
 
-</div>
+## 1. Introduction
 
-> *Reported concisely, emphasising the student's contribution and the novelty, creativity and
-> effectiveness of the solution. Total length ≤ 6 A4 pages. Source code and an installer are
-> attached (see `README.md`).*
+Operational RCA is difficult because one upstream fault can create many
+downstream symptoms. In telecom networks, a fiber cut, site power failure, radio
+interference event, or core-network misconfiguration can trigger alarms across
+transport, RAN, and core elements. In cloud-native systems, similar propagation
+appears across services, containers, traces, metrics, and logs. LLMs are useful
+for summarizing such evidence, but raw prompting is brittle: large telemetry
+contexts can exceed context windows, hallucinated actions can derail
+investigations, and self-reported confidence is often poorly calibrated.
 
----
+TelcoMAS takes the position that RCA agents should not be monolithic chatbots.
+Instead, they should interact with bounded tools, specialize by operational
+role, expose evidence, and fuse hypotheses with calibrated confidence. This is
+consistent with ReAct's reasoning/action paradigm, RCA-agent style telemetry
+retrieval in OpenRCA, TAMO's tool-assisted multimodal observation, Flow-of-Action
+SOP guidance, and mABC's multi-agent voting.
 
-## 1. General Introduction
+## 2. Method
 
-Operating a mobile network means handling a constant stream of incidents. When something breaks,
-engineers follow a well-known procedure: **detect** the problem, **analyse** the likely root
-cause, **correlate** it with other data and past experience, **propose** a fix, and **verify**
-that it worked. In practice a single fault — a cut fiber, an overloaded core function, a power
-loss at a site — raises an *alarm storm* of dozens of downstream symptoms, and the hard part is
-finding the one upstream cause that explains them all, quickly, before the outage widens.
+### 2.1 Workflow
 
-Each of those steps is a distinct, specialised task. This motivates a **Multi-Agent** approach
-rather than a single, monolithic AI assistant: several cooperating agents, each responsible for
-one step or one network domain, can divide the work, cross-check each other, and reach a more
-reliable decision — exactly how a real incident bridge of specialists operates.
+The pipeline is:
 
-**Objective.** Design and build a Multi-Agent system that (i) studies multi-agent architectures
-and coordination mechanisms, (ii) lets agents exchange information and split responsibilities, and
-(iii) applies this to analysing and resolving telecom network incidents.
+1. **Detection/triage**: summarize alarms, severity, affected elements, and the
+   suspected domain.
+2. **Knowledge correlation**: retrieve SOPs and historical incidents using a
+   lightweight TF-IDF retriever.
+3. **Parallel expert diagnosis**: RAN, Transport/Infrastructure, and Core
+   experts independently inspect alarms, KPIs, logs, topology, diagnostics, and
+   knowledge-base evidence.
+4. **Calibrated consensus**: hypotheses are scored with calibrated confidence,
+   evidence support, topology support, and RAG/SOP support. Agreement among
+   distinct experts adds a small bonus. The LLM arbiter is called only when the
+   top candidates are close or experts conflict.
+5. **Remediation**: the confirmed root cause is mapped to an SOP-grounded action.
+6. **Validation**: the fix is applied to the simulator and resolution is judged
+   from actual post-action environment state, not from the model's claim.
 
-**Problem solved & significance.** Given an incident (alarms, KPIs, logs), the system must
-**localise the root-cause network element, name the fault, propose an SOP-based remediation, and
-confirm the fix** — reducing mean-time-to-repair and the manual load on operators.
+### 2.2 Calibrated Evidence-Weighted Consensus
 
-**Student's role & main contribution.** The student designed the overall architecture and
-implemented the full prototype end-to-end: the simulated network + fault-injection environment,
-the tool layer, all agents, the **novel consensus module**, the orchestrator, the benchmark, the
-dashboard and the installer. The central contribution is a **coherent synthesis** of four recent
-research directions into one working system, plus a **domain-expert-team-with-weighted-consensus**
-diagnosis mechanism (Section 2) that is shown to outperform a single-agent baseline (Section 4).
-
-## 2. Content and Method
-
-### 2.1 Architecture overview
-
-TelcoMAS implements the incident-handling procedure as a **Flow-of-Action** pipeline driven by an
-orchestrator, with a team of agents and a shared tool layer over a simulated network and a
-knowledge base.
-
-![TelcoMAS architecture](figures/architecture.png)
-
-*Figure 1. The Flow-of-Action orchestrator sequences six agent roles; every agent observes and
-acts on the network through an OpenAI function-calling tool layer, backed by a simulated 5G
-network and an SOP/incident knowledge base.*
-
-The agent team:
-
-1. **Detection / Triage** — classifies severity and the suspected domain from the alarm set.
-2. **Correlation** — retrieves matching SOP playbooks and similar historical incidents (RAG).
-3. **Diagnosis experts** — three specialists (RAN, Transport & Infrastructure, Core) *independently*
-   investigate and each return a ranked hypothesis: `{faulty_element, fault_type, confidence,
-   evidence}`. Each expert is told that a symptom in its domain can be caused upstream, and is
-   asked to follow the topology dependency chain — this is what turns an alarm storm into a single
-   root cause.
-4. **Consensus** — fuses the experts' hypotheses (Section 2.3).
-5. **Remediation** — maps the confirmed cause to a concrete, SOP-grounded action plan.
-6. **Validation** — executes the fix on the (simulated) network and re-reads KPIs/alarms to
-   confirm recovery.
-
-### 2.2 Environment, tools and knowledge (TAMO-style observation)
-
-Because we cannot attach to a live carrier network, the system observes a **deterministic
-simulated 5G network**: a topology of Core → Transport → Aggregation → gNodeB → Cell (plus site
-power), with per-element KPIs, alarms and logs. A **fault-injection engine** supports ten
-incident types spanning all four domains (fiber cut, cell/RRU outage, radio congestion, core
-misconfiguration, line-card fault, site power loss, core overload, DNS failure, license
-exhaustion, uplink interference), each with a **ground-truth** root cause and correct remediation
-for evaluation. A single fault propagates realistically to downstream elements, producing the
-alarm storm the agents must untangle.
-
-Agents perceive and act only through an **OpenAI function-calling tool layer** — the *tool-assisted,
-multi-modality observation* idea from TAMO: `query_alarms`, `query_kpis`, `query_logs`,
-`query_topology`, `search_knowledge_base`, `get_historical_incidents`, `run_diagnostic`, and
-`apply_remediation`. The knowledge base holds SOP playbooks and resolved historical incidents,
-retrieved with a lightweight, dependency-free **TF-IDF** retriever (no external embedding service).
-
-### 2.3 The novel element: weighted consensus over a domain-expert team
-
-Rather than a single diagnostic pass, TelcoMAS treats the three experts as **nodes that vote**.
-This is an *mABC-* and consensus-theory-inspired mechanism and is the student's main creative
-contribution. Each expert *i* casts a confidence-weighted vote for a candidate element *e*; nodes
-that agree reinforce each other:
+The previous prototype used raw confidence-weighted voting. The current method
+shrinks raw LLM confidence toward 0.5 and adds bounded evidence terms:
 
 ```
-score(e) = Σ_i confidence_i · 1[expert i blames e]  +  β · (distinct_experts_on_e − 1)
+score(e) = sum_i [
+  calibrate(conf_i)
+  + evidence_bonus_i
+  + topology_bonus_i
+  + rag_bonus_i
+] * 1[expert_i predicts e]
++ beta * (distinct_experts_on_e - 1)
 ```
 
-with an agreement bonus `β`. The tally is then handed to an **LLM arbiter** which reviews the
-per-expert evidence, prefers the candidate with the strongest combined support, and — crucially —
-is instructed that when experts disagree, the correct answer is usually the *upstream* element
-that explains the most downstream symptoms. The arbiter emits the final, *explained* verdict. This
-combines an interpretable numeric vote (auditable `vote_breakdown`) with agentic arbitration.
+This is deliberately presented as an **engineering heuristic**, not as a new
+control-theoretic consensus proof. The calibration motivation follows work on
+confidence calibration, and the risk/coverage framing follows conformal-style
+abstention ideas. The arbiter remains available for low-margin conflicts, but
+the common high-margin path is numeric and auditable.
 
-### 2.4 Technologies
+### 2.3 External Benchmark Adapters
 
-Python; the `openai` SDK against an **OpenAI-compatible** endpoint (works unchanged on OpenAI or
-DeepSeek); `pydantic` for typed contracts between components; a custom manual **tool-calling agent
-loop** that records every step for full traceability; `rich` (CLI), `streamlit` (dashboard) and
-`matplotlib` (charts). An optional on-disk cache replays real LLM completions to make the
-benchmark reproducible and cheap.
+We added a common `ExternalBenchmarkCase` abstraction with a label-safe
+`inference_payload()`. Ground-truth labels remain available only to scorers.
 
-## 3. Implementation Results
+**RCAEval.** `data/rcaeval` is a symlink to the downloaded RCAEval data in
+`/home/phucht/project/vdt2/data/rcaeval`. The adapter validates the official
+case counts:
 
-The prototype is complete and runs end-to-end in three ways: a **CLI** (`python -m apps.cli
---scenario fiber_cut`), an interactive **Streamlit dashboard**, and a **benchmark** harness.
-**Source code and a one-command installer** (Makefile + Dockerfile) are attached.
+| Suite | Cases |
+|---|---:|
+| RE1 | 375 |
+| RE2 | 270 |
+| RE3 | 90 |
+| Total | 735 |
 
-**A worked incident (`fiber_cut`).** A fiber break on `FIBER-LINK-01` injects a critical
-Loss-of-Signal alarm on the link and a storm of *node-unreachable* alarms plus zero-throughput
-KPIs across the whole downstream SITE-A branch (routers, switch, gNodeBs, cells). TelcoMAS:
+**OpenRCA.** The OpenRCA integration expects `OPENRCA_DATA_DIR` or
+`data/openrca` to contain `Telecom/query.csv` and `Telecom/telemetry`. Runtime
+tasks expose only task id and instruction; `scoring_points` are used only after
+prediction generation. Because the current machine has limited RAM and the
+OpenRCA data is not present locally, the CLI skips gracefully unless
+`--strict-data` is used.
 
-- **Triage** flags a CRITICAL Transport-domain incident with a wide blast radius.
-- **Correlation** retrieves `SOP-TRANSPORT-FIBER` and a matching historical incident.
-- **Diagnosis** — the Transport & Infrastructure expert, following the dependency chain and
-  confirming with an optical-power diagnostic (`Rx = −41 dBm, LOS`), blames `FIBER-LINK-01` with
-  high confidence; the RAN expert sees its cells down but (correctly) attributes them upstream with
-  low confidence.
-- **Consensus** concentrates the weighted vote on `FIBER-LINK-01`; the arbiter confirms it.
-- **Remediation** produces the fiber-repair/re-route plan; **Validation** applies it and verifies
-  every KPI returns to normal — the incident is marked *resolved*.
+## 3. Experimental Setup
 
-The system therefore does not just *classify* — it **localises the exact element, explains its
-reasoning, acts, and verifies recovery**, with a complete agent trace visible in the CLI and
-dashboard (screenshots: run `make dashboard`).
+### 3.1 Telco v1 Simulator
 
-**What the student directly implemented:** all of it — 11 Python modules across environment,
-knowledge, tools, agents and evaluation; the consensus algorithm; the orchestrator; the
-provider-agnostic LLM layer; 19 automated tests; the dashboard; and the packaging.
+The telecom simulator contains ten deterministic scenarios: fiber cut, cell
+outage, congestion, AMF misconfiguration, line-card fault, site power loss, AMF
+overload, DNS failure, license exhaustion, and interference. Each scenario has a
+single injected root cause, downstream symptom propagation, KPIs, alarms, logs,
+diagnostics, and a remediation signature.
 
-## 4. Efficiency Evaluation
+### 3.2 RCAEval Smoke/Profile Benchmark
 
-**Method.** The multi-agent system and a **single-agent baseline** (one agent, all tools, no
-team, no consensus) are run over all ten ground-truth scenarios by `make bench`. We measure:
+The current RCAEval runner is a label-safe profile benchmark. It summarizes
+pre/post metric shifts, ranks likely root services, and reports Hit@k, MRR,
+fault accuracy, and bootstrap 95% confidence intervals. It is not yet the final
+LLM-agent RCAEval result; it is the artifact bridge that proves data ingestion,
+label separation, scoring, and confidence interval reporting.
 
-- **Localization accuracy** — predicted faulty element == ground truth.
-- **Root-cause accuracy** — the stated cause matches the ground-truth signature.
-- **Diagnosis accuracy** — both of the above (the strict metric).
-- **Resolution rate** — the applied remediation actually restored the network.
-- **Efficiency** — average tokens and tool/LLM calls per incident, and latency.
+Command used:
 
-The harness writes `results/benchmark.json` and the two charts below.
+```bash
+python3 -m telco_mas.evaluation.run_benchmark \
+  --suite rcaeval \
+  --sample 30 \
+  --systems full,single,no_consensus \
+  --out results/rcaeval_sample30.json
+```
 
-![Accuracy comparison](figures/accuracy_comparison.png)
-![Efficiency comparison](figures/efficiency_comparison.png)
+### 3.3 OpenRCA Staged Integration
 
-*Figures 2–3. Multi-agent vs single-agent accuracy and cost, produced by `make bench`.*
+Command used:
 
-**Results (fill in from your run of `make bench`).**
+```bash
+python3 -m telco_mas.openrca.cli --limit 3 --out results/openrca_smoke.json
+```
 
-| Metric | Multi-Agent (TelcoMAS) | Single-Agent baseline |
-|---|---|---|
-| Localization accuracy | ____ % | ____ % |
-| Root-cause accuracy | ____ % | ____ % |
-| Diagnosis accuracy | ____ % | ____ % |
-| Resolution rate | ____ % | ____ % |
-| Avg tokens / incident | ____ | ____ |
+Current status: skipped, because `data/openrca/Telecom` is not populated. Once
+the dataset is placed there, the same CLI evaluates predictions with the
+OpenRCA scoring format.
 
-*Table 1. Benchmark summary (paste the numbers the harness prints).*
+### 3.4 Ablation protocol (real component switches)
 
-**Expected finding & why.** The multi-agent team is expected to **localise the root cause more
-reliably**, especially on wide-blast-radius faults (fiber cut, power loss) where a single agent is
-easily misled by the loudest downstream alarms: the domain experts examine the incident from
-complementary angles and the consensus vote plus arbiter concentrate on the true *upstream* cause.
-The trade-off is **higher token cost** (several agents instead of one) — an accuracy-vs-cost
-trade the operator can tune via the model choice and the `effort`/temperature settings. The
-value proposition — correctly localising and *verifiably* fixing an incident — clearly justifies
-the extra tokens in an operations setting where a missed root cause means a prolonged outage.
+To isolate the contribution of each component, the pipeline exposes real ablation
+switches (`PipelineConfig` in `agents/orchestrator.py`), *not* aliases of the full
+system:
 
-## 5. Conclusion
+- **`no_rag`** — skip the correlation agent and remove the knowledge-base tools from
+  the diagnosis experts (isolates the value of RAG for localization).
+- **`no_consensus`** — skip the consensus module and take the single most confident
+  expert (isolates the fusion mechanism vs. best-expert).
+- **`no_arbiter`** — run the numeric weighted vote but never call the LLM arbiter
+  (isolates the arbiter's marginal value over the numeric vote).
 
-TelcoMAS shows that framing telecom incident handling as a **team of cooperating LLM agents** — a
-Flow-of-Action orchestrator, tool-assisted multi-domain diagnosis, and an mABC-inspired
-weighted-consensus decision — produces a system that not only analyses incidents but **localises,
-explains, remediates and verifies** them end-to-end. The novelty is the *synthesis* of four
-research directions into one working prototype and the **weighted-consensus-over-experts**
-mechanism, which improves root-cause localisation over a single-agent baseline.
+Each switch changes the executed pipeline (unit-tested in `tests/test_p0_hardening.py`).
+The ablation table (§4.3) is produced by a live run:
 
-**Future work.** Replace the simulated environment with live OSS/observability feeds; add a
-learning loop that writes resolved incidents back into the knowledge base; support truly parallel
-(asynchronous) expert execution; and extend the consensus to a multi-round debate protocol.
+```bash
+python3 -m telco_mas.evaluation.run_benchmark \
+  --systems full,single,no_rag,no_consensus,no_arbiter --runs 3 --no-cache
+```
 
-## 6. References
+### 3.5 Construct-validity controls (hold-out + distractors)
 
-1. D. Roy et al., "Exploring LLM-based Agents for Root Cause Analysis," *Companion Proc. 32nd ACM
-   Int. Conf. on the Foundations of Software Engineering (FSE)*, 2024.
-2. X. Zhang et al., "TAMO: Fine-Grained Root Cause Analysis via Tool-Assisted LLM Agent with
-   Multi-Modality Observation Data in Cloud-Native Systems," *IEEE Trans. Services Computing*,
-   18(6):4221–4233, 2025.
-3. W. Zhang et al., "mABC: multi-Agent Blockchain-Inspired Collaboration for Root Cause Analysis in
-   Micro-services Architecture," *Findings of the ACL: EMNLP 2024*, 2024.
-4. C. Pei et al., "Flow-of-Action: SOP-Enhanced LLM-Based Multi-Agent System for Root Cause
-   Analysis," *Companion Proc. ACM Web Conference 2025*, 2025.
-5. L. Zhang et al., "A Solution to Optimal Consensus of Multi-Agent Systems," *Int. J. Robust and
-   Nonlinear Control*, 36(1):195–206, 2026.
-6. CloudThinker, AI agents for cloud operations. https://cloudthinker.io/ (accessed 2026).
+Because the SOP/incident knowledge base is generated from the same fault library that
+generates incidents, naive RAG can "read the answer key". Two controls address this:
+
+- **`--holdout-sop`** removes each scenario's exactly-matching SOP *and* same-fault
+  historical incidents from the retriever, forcing the system to generalize from
+  telemetry instead of retrieving the solution.
+- **`--kb-distractors`** injects plausible off-target SOPs/incidents (handover failure,
+  GNSS loss, BGP flap, cert expiry, …) so retrieval is non-trivial.
+
+```bash
+python3 -m telco_mas.evaluation.run_benchmark --systems full,single --holdout-sop --kb-distractors --no-cache
+```
+
+## 4. Results
+
+### 4.1 Telco v1 Cached Benchmark (fair metric)
+
+The existing cached live-LLM benchmark in `results/benchmark.json` reports:
+
+| Metric | Multi-agent | Single-agent |
+|---|---:|---:|
+| Localization accuracy | 100% | 90% |
+| Root-cause keyword accuracy | 100% | 100% |
+| Fault-type family accuracy (semantic) | 90% | 90% |
+| Diagnosis accuracy | 100% | 90% |
+| Resolution rate | 100% | 90% |
+| Avg tokens / incident | 24,190 | 7,434 |
+| Avg latency / incident | 48.4s | 8.6s |
+
+**Metric correction (important).** An earlier version scored fault type by *exact*
+match to the canonical enum. Because only the multi-agent experts were prompted with
+the enum, the single agent — which emitted equally valid alarm-style labels such as
+`MAINS_FAIL`, `HIGH_CPU`, `CONFIG_MISMATCH` — scored 0% purely as a label-space
+artifact, not a capability gap. We replaced this with a **semantic family match**
+(`fault_type_match` in `evaluation/metrics.py`, applied identically to both systems).
+Under the fair metric, fault-type accuracy is **tied at 90%**.
+
+**Honest interpretation.** After removing that artifact, the genuine multi-agent
+advantage on this suite is **one case each** in localization, diagnosis, and
+resolution (10/10 vs 9/10, n=10) at roughly **3.25× the token cost and 5.6× the
+latency**. With n=10 and a single discordant pair, a paired McNemar test is not
+significant (p≈1.0). The result supports feasibility of the pipeline; it is **not**
+evidence that multi-agent beats single-agent — the synthetic suite has a ceiling
+(the single agent already scores ~90–100%), so the comparison is under-powered by
+construction. Stronger claims require the harder scenarios, ablations, and external
+benchmarks described below.
+
+### 4.2 RCAEval Sample-30 Profile Smoke
+
+On a stratified sample of 30 RCAEval cases:
+
+| System label | Hit@1 | Hit@3 | MRR | Fault accuracy |
+|---|---:|---:|---:|---:|
+| rcaeval_full | 0.667 [0.500, 0.833] | 0.767 [0.600, 0.900] | 0.742 [0.606, 0.868] | 0.467 [0.300, 0.633] |
+| rcaeval_single | 0.667 [0.500, 0.833] | 0.767 [0.600, 0.900] | 0.742 [0.606, 0.868] | 0.467 [0.300, 0.633] |
+| rcaeval_no_consensus | 0.667 [0.500, 0.833] | 0.767 [0.600, 0.900] | 0.742 [0.606, 0.868] | 0.467 [0.300, 0.633] |
+
+These rows are intentionally identical because the current RCAEval path is a
+profile-smoke scorer shared across labels. The purpose of this table is to show
+that public-data ingestion, scoring, and CI reporting are working. The next
+paper-grade experiment should replace these smoke systems with true LLM-agent
+and ablation runs.
+
+### 4.3 Ablation (to be filled by a live run)
+
+The ablation switches are implemented and unit-tested; the numbers below require a
+live LLM run (the offline cache from the headline run does not cover the changed
+prompts of `no_rag`, and is only partial for the others). Fill from the command in §3.4:
+
+| System | Localization | Diagnosis | Resolution | Avg tokens |
+|---|---:|---:|---:|---:|
+| full | ____ | ____ | ____ | ____ |
+| no_rag | ____ | ____ | ____ | ____ |
+| no_consensus | ____ | ____ | ____ | ____ |
+| no_arbiter | ____ | ____ | ____ | ____ |
+| single | ____ | ____ | ____ | ____ |
+
+**Expected reading.** If `no_arbiter ≈ full`, the arbiter rarely fires on this suite
+and the "consensus" is effectively the numeric vote (a finding, not a failure). If
+`no_consensus < full`, the fusion adds value beyond the single best expert. If
+`no_rag` drops sharply, RAG is load-bearing — but pair it with `--holdout-sop` to
+separate genuine retrieval value from answer-key leakage.
+
+## 5. Threats to Validity
+
+**Synthetic-to-real gap and KB circularity.** Telco v1 is deterministic and generated
+from a fault library that also informs the knowledge base, so naive RAG can retrieve
+the answer. The `--holdout-sop` and `--kb-distractors` controls (§3.5) mitigate this by
+removing the exact answer and adding distractors, but the environment remains synthetic;
+it is useful for controlled debugging, not for broad field claims.
+
+**OpenRCA resources.** OpenRCA is the strongest LLM-agent external benchmark,
+but it requires large telemetry storage and careful chunked processing. It is
+integrated but not yet locally populated.
+
+**RCAEval domain shift.** RCAEval is microservice-focused, while TelcoMAS is
+telecom-focused. Positive RCAEval results would show transfer of the reasoning
+pattern, not telecom-specific field validation.
+
+**LLM variance and calibration.** LLM outputs can vary by provider, model,
+temperature, and prompt. Reported paper results must include exact model,
+provider, temperature, cache state, run count, and confidence intervals.
+
+**Remediation safety.** The current remediation tool acts only on a simulator.
+Production use would require approval gates, rollback plans, RBAC, audit logs,
+and prompt-injection controls.
+
+## 6. Artifact Status
+
+Implemented in this revision:
+
+- RCAEval symlink and label-safe adapter; OpenRCA staged integration.
+- `ExternalBenchmarkCase` abstraction; extended benchmark CLI (suites, systems, sampling, runs, seeds).
+- Calibrated evidence-weighted consensus; parallel expert diagnosis; validation grounded in simulator state.
+
+Scientific-hardening (P0) changes in this revision:
+
+- **Fair fault-type metric** — semantic family match replacing exact-enum (removed the
+  90%-vs-0% label-space artifact; both systems now 90%).
+- **Real ablation switches** — `no_rag` / `no_consensus` / `no_arbiter` change the executed
+  pipeline (previously they were aliases of the full system).
+- **Construct-validity controls** — `--holdout-sop` and `--kb-distractors`.
+- **`--cache-only`** offline guard so results can be regenerated without live spend.
+
+Verification:
+
+```bash
+python3 -m pytest -q
+# 47 passed
+```
+
+## References
+
+1. Yao et al. ReAct: Synergizing Reasoning and Acting in Language Models.
+   https://arxiv.org/abs/2210.03629
+2. Roy et al. Exploring LLM-based Agents for Root Cause Analysis.
+   https://arxiv.org/abs/2403.04123
+3. Zhang et al. mABC: Multi-Agent Blockchain-inspired Collaboration for Root
+   Cause Analysis in Micro-Services Architecture.
+   https://aclanthology.org/2024.findings-emnlp.232/
+4. Pei et al. Flow-of-Action: SOP Enhanced LLM-Based Multi-Agent System for
+   Root Cause Analysis. https://arxiv.org/abs/2502.08224
+5. Zhang et al. TAMO: Fine-Grained Root Cause Analysis via Tool-Assisted LLM
+   Agent with Multi-Modality Observation Data. https://arxiv.org/abs/2504.20462
+6. Xu et al. OpenRCA: Can Large Language Models Locate the Root Cause of
+   Software Failures? https://github.com/microsoft/OpenRCA
+7. Pham et al. RCAEval: A Benchmark for Root Cause Analysis of Microservice
+   Systems with Telemetry Data. https://github.com/phamquiluan/RCAEval
+8. Guo et al. On Calibration of Modern Neural Networks.
+   https://arxiv.org/abs/1706.04599
+9. Shafer and Vovk. A Tutorial on Conformal Prediction.
+   https://arxiv.org/abs/0706.3188
+10. Simba: Root Cause Analysis of Anomalies in 5G RAN Using Graph Neural
+    Network and Transformer. https://arxiv.org/html/2406.15638v1

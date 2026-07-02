@@ -109,6 +109,39 @@ LLM drives the agent loop):
 make test
 ```
 
+## Research / paper-grade evaluation
+
+The research-track artifact adds public benchmark adapters and stronger scientific reporting:
+
+```bash
+# install heavier experiment dependencies
+make install-research
+
+# validate and run a label-safe RCAEval smoke/profile benchmark
+make bench ARGS="--suite rcaeval --sample 30 --systems full,single,no_consensus --out results/rcaeval_sample30.json"
+
+# staged OpenRCA integration; skips gracefully until OPENRCA_DATA_DIR/data/openrca is populated
+make bench-openrca ARGS="--limit 3 --out results/openrca_smoke.json"
+
+# ablation: isolate the contribution of RAG / consensus / arbiter (real switches, not aliases)
+make bench ARGS="--systems full,single,no_rag,no_consensus,no_arbiter --runs 3 --no-cache"
+
+# construct-validity control: hold out the exactly-matching SOP + add distractor SOPs
+make bench ARGS="--systems full,single --holdout-sop --kb-distractors --no-cache"
+```
+
+Fault type is scored by **semantic family match** (fair to both systems), not exact-enum
+string compliance. `--cache-only` replays cached completions offline (no live spend).
+
+Data layout:
+
+* `data/rcaeval` is a symlink to `/home/phucht/project/vdt2/data/rcaeval` and should contain 735 cases (RE1=375, RE2=270, RE3=90).
+* `data/openrca` is a placeholder. Put OpenRCA data there or set `OPENRCA_DATA_DIR` to a directory containing `Telecom/query.csv` and `Telecom/telemetry`.
+* Public-data adapters expose label-safe runtime payloads; scoring labels such as RCAEval roots and OpenRCA `scoring_points` are used only by evaluators.
+
+The research manuscript is `report/report.md`; the original VDT-style report is preserved as
+`report/report_vdt2026.md`.
+
 ## Project structure
 
 ```

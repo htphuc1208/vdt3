@@ -50,8 +50,8 @@ class SingleAgentBaseline(BaseAgent):
             confidence=as_float(d.get("confidence"), 0.5),
             explanation="single-agent baseline (no expert team, no consensus vote)",
         )
-        # ground the resolution in the actual network state, not just the agent's claim
-        resolved = self.ctx.sim.is_healthy() or bool(d.get("resolved", False))
+        # Ground resolution in the actual network state, never just the model's claim.
+        resolved = self.ctx.sim.is_healthy()
         result = PipelineResult(
             incident=incident,
             system="single_agent",

@@ -8,8 +8,17 @@ import matplotlib
 matplotlib.use("Agg")  # headless
 import matplotlib.pyplot as plt  # noqa: E402
 
-_LABELS = {"multi_agent": "Multi-Agent (TelcoMAS)", "single_agent": "Single-Agent baseline"}
-_COLORS = {"multi_agent": "#2563eb", "single_agent": "#9ca3af"}
+_LABELS = {
+    "multi_agent": "Multi-Agent (TelcoMAS)", "full": "Multi-Agent (full)", "multi": "Multi-Agent",
+    "single_agent": "Single-Agent baseline", "single": "Single-Agent",
+    "no_rag": "− RAG", "no_consensus": "− consensus", "no_arbiter": "− arbiter",
+}
+_COLORS = {
+    "multi_agent": "#2563eb", "full": "#2563eb", "multi": "#2563eb",
+    "single_agent": "#9ca3af", "single": "#9ca3af",
+    "no_rag": "#f59e0b", "no_consensus": "#ef4444", "no_arbiter": "#8b5cf6",
+}
+_ORDER = ["multi_agent", "full", "multi", "single_agent", "single", "no_rag", "no_consensus", "no_arbiter"]
 
 
 def _label(system: str) -> str:
@@ -18,7 +27,7 @@ def _label(system: str) -> str:
 
 def make_charts(summary: dict, outdir: str = "report/figures") -> list[str]:
     os.makedirs(outdir, exist_ok=True)
-    systems = [s for s in ["multi_agent", "single_agent"] if s in summary] or list(summary)
+    systems = [s for s in _ORDER if s in summary] or list(summary)
     paths: list[str] = []
 
     # --- accuracy comparison ---
