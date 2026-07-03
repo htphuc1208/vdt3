@@ -156,13 +156,19 @@ system:
   expert (isolates the fusion mechanism vs. best-expert).
 - **`no_arbiter`** — run the numeric weighted vote but never call the LLM arbiter
   (isolates the arbiter's marginal value over the numeric vote).
+- **`no_partition`** — give every expert unrestricted deep telemetry access
+  (isolates the value of information diversity by domain partition).
+- **`no_debate`** — skip the cross-examination round before consensus
+  (isolates the value of one disagreement-resolution round).
 
 Each switch changes the executed pipeline (unit-tested in `tests/test_p0_hardening.py`).
-The ablation table (§4.3) is produced by a live run:
+The ablation table (§4.3) is produced by a live run and is saved separately by
+default:
 
 ```bash
 python3 -m telco_mas.evaluation.run_benchmark \
-  --systems full,single,no_rag,no_consensus,no_arbiter --runs 3 --no-cache
+  --systems full,single,no_rag,no_consensus,no_arbiter,no_partition,no_debate --runs 3 --no-cache
+# -> results/ablation_telco_v1_runs3.json
 ```
 
 ### 3.5 Construct-validity controls (hold-out + distractors)
@@ -178,6 +184,47 @@ generates incidents, naive RAG can "read the answer key". Two controls address t
 
 ```bash
 python3 -m telco_mas.evaluation.run_benchmark --systems full,single --holdout-sop --kb-distractors --no-cache
+# -> results/construct_holdout_distractors_telco_v1.json
+```
+
+### 3.6 Telco v2 stress suite
+
+The original `telco_v1` suite has only ten deterministic single-root scenarios. To
+avoid ceiling-effect claims, the artifact now includes `telco_v2`: 60 generated
+synthetic scenarios balanced across the ten fault families. Each case carries stress
+metadata such as `rag_required`, `expert_disagreement`, `arbiter_required`,
+`missing_noisy_telemetry`, `multi_fault`, `distractor_alarms`, and `no_exact_sop`.
+Several tags are active in the simulator/runner: multi-fault cases inject a secondary
+fault, noisy cases perturb the initial alarm view, distractor cases add irrelevant
+alarms, and `no_exact_sop` cases hold out the matching SOP during retrieval.
+
+```bash
+python3 -m telco_mas.evaluation.run_benchmark \
+  --suite telco_v2 \
+  --systems full,single,no_rag,no_consensus,no_arbiter \
+  --runs 3 --no-cache
+```
+
+### 3.7 Telco v3 hard-regime hypothesis test
+
+`telco_v3` is the suite intended for the conditional multi-agent claim. It uses a
+larger topology, cross-domain masquerade faults, multi-fault cases, and false-alarm
+noise. The method under test is also stronger than the original prototype: experts
+can deep-inspect only their own domains, a cross-examination round runs when experts
+disagree, and consensus weights verified diagnostics plus topology coverage rather
+than keyword matches in an expert's prose.
+
+The intended scientific claim is conditional: if results support it, we can say that
+TelcoMAS improves strict diagnosis or end-to-end primary-fault resolution over a
+strong unrestricted single-agent baseline on hard, information-partitioned RCA cases.
+We should not claim that multi-agent systems are universally superior.
+
+```bash
+python3 -m telco_mas.evaluation.run_benchmark \
+  --suite telco_v3 \
+  --systems full,single,no_rag,no_consensus,no_arbiter,no_partition,no_debate \
+  --runs 3 --no-cache \
+  --out results/telco_v3_ablation_runs3.json
 ```
 
 ## 4. Results
@@ -230,25 +277,47 @@ that public-data ingestion, scoring, and CI reporting are working. The next
 paper-grade experiment should replace these smoke systems with true LLM-agent
 and ablation runs.
 
-### 4.3 Ablation (to be filled by a live run)
+### 4.3 Ablation and construct-validity controls
 
-The ablation switches are implemented and unit-tested; the numbers below require a
-live LLM run (the offline cache from the headline run does not cover the changed
-prompts of `no_rag`, and is only partial for the others). Fill from the command in §3.4:
+The July 2026 `telco_v1` ablation run under the earlier loose diagnosis metric shows
+a clear ceiling effect:
 
-| System | Localization | Diagnosis | Resolution | Avg tokens |
-|---|---:|---:|---:|---:|
-| full | ____ | ____ | ____ | ____ |
-| no_rag | ____ | ____ | ____ | ____ |
-| no_consensus | ____ | ____ | ____ | ____ |
-| no_arbiter | ____ | ____ | ____ | ____ |
-| single | ____ | ____ | ____ | ____ |
+| System | Localization | Root cause keyword | Loose diagnosis | Resolution | Avg tokens | Avg tool calls | Avg LLM calls | Latency |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| full | 100% | 100% | 100% | 100% | 24,522 | 30 | 19 | 29.0s |
+| no_rag | 100% | 100% | 100% | 100% | 25,051 | 34 | 21 | 26.6s |
+| no_consensus | 100% | 100% | 100% | 100% | 22,942 | 30 | 18 | 28.6s |
+| no_arbiter | 100% | 100% | 100% | 100% | 23,382 | 30 | 18 | 29.0s |
+| single | 90% | 100% | 90% | 63% | 7,226 | 6 | 6 | 8.3s |
 
-**Expected reading.** If `no_arbiter ≈ full`, the arbiter rarely fires on this suite
-and the "consensus" is effectively the numeric vote (a finding, not a failure). If
-`no_consensus < full`, the fusion adds value beyond the single best expert. If
-`no_rag` drops sharply, RAG is load-bearing — but pair it with `--holdout-sop` to
-separate genuine retrieval value from answer-key leakage.
+This table supports only a feasibility claim. Because `full`, `no_rag`,
+`no_consensus`, and `no_arbiter` are tied at 100%, `telco_v1` does not isolate the
+causal contribution of RAG, consensus, or the arbiter. It shows that the scenarios are
+too easy for the multi-agent variants and that the single-agent gap is concentrated in
+end-to-end remediation rather than root-cause wording.
+
+The construct-validity control (`--holdout-sop --kb-distractors`) is more informative:
+
+| System | Localization | Root cause keyword | Loose diagnosis | Resolution | Avg tokens | Avg tool calls | Avg LLM calls | Latency |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| full | 100% | 100% | 100% | 70% | 26,037 | 34 | 20 | 30.4s |
+| single | 90% | 100% | 90% | 60% | 7,632 | 6 | 7 | 9.1s |
+
+Holding out the exact SOP and adding distractors leaves diagnosis near the ceiling but
+reduces resolution, exposing a remediation/action-execution fragility. This is exactly
+why the benchmark now reports strict diagnosis, remediation target correctness,
+action/SOP correctness, simulator-grounded resolution, and solved-cases-per-10k-tokens.
+Future reported tables should use the new strict metric: correct element + semantic
+fault family + causal explanation. Repeated LLM runs must be treated as stochastic
+variance over the same scenarios, not as new independent samples.
+
+The next publishable result should come from `telco_v3`, with `telco_v1` retained as
+a ceiling-effect feasibility control and `telco_v2` as broader synthetic coverage.
+The ablation reading is mechanistic: `full > no_partition` supports information
+diversity, `full > no_debate` supports cross-examination, and `full > no_consensus`
+supports fusion beyond selecting the most confident expert. If `full` does not beat
+the strong single-agent baseline on `telco_v3`, the correct conclusion is that this
+mechanism or suite does not yet establish the advantage.
 
 ## 5. Threats to Validity
 
@@ -280,22 +349,35 @@ Implemented in this revision:
 
 - RCAEval symlink and label-safe adapter; OpenRCA staged integration.
 - `ExternalBenchmarkCase` abstraction; extended benchmark CLI (suites, systems, sampling, runs, seeds).
-- Calibrated evidence-weighted consensus; parallel expert diagnosis; validation grounded in simulator state.
+- Verifiable-evidence-weighted consensus; partitioned parallel expert diagnosis; validation grounded in simulator state.
 
 Scientific-hardening (P0) changes in this revision:
 
 - **Fair fault-type metric** — semantic family match replacing exact-enum (removed the
   90%-vs-0% label-space artifact; both systems now 90%).
+- **Strict diagnosis metric** — headline diagnosis now requires correct element,
+  semantic fault family, and causal explanation; loose keyword matching remains a
+  secondary metric.
+- **Remediation decomposition** — target/action/SOP correctness, validation evidence,
+  simulator-grounded resolution, and solved-cases-per-10k-tokens are reported separately.
+- **Paper-grade intervals/tests** — Wilson intervals for binary rates, exact paired
+  McNemar tests, and scenario-level paired bootstrap effects.
 - **Real ablation switches** — `no_rag` / `no_consensus` / `no_arbiter` change the executed
   pipeline (previously they were aliases of the full system).
 - **Construct-validity controls** — `--holdout-sop` and `--kb-distractors`.
+- **Telco v2 stress suite** — 60 generated scenarios balanced over the ten fault families,
+  with active stress tags for multi-fault, noisy, distractor, and no-exact-SOP cases.
+- **Telco v3 hard suite** — larger topology, cross-domain masquerade faults, multi-fault
+  cases, false alarms, partition/debate ablations, and primary-fault-cleared scoring.
+- **External benchmark separation** — RCAEval profile mode is explicitly marked as a smoke
+  test; RCAEval/OpenRCA CLIs expose live LLM modes for label-safe external predictions.
 - **`--cache-only`** offline guard so results can be regenerated without live spend.
 
 Verification:
 
 ```bash
 python3 -m pytest -q
-# 47 passed
+# 56 passed
 ```
 
 ## References

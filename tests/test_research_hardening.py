@@ -32,7 +32,14 @@ def test_calibrated_consensus_is_deterministic_and_evidence_weighted():
     scores1, _ = tally_votes(hypotheses)
     scores2, _ = tally_votes(hypotheses)
     assert scores1 == scores2
-    assert scores1["FIBER-LINK-01"] > scores1["RAN-CELL-01"]
+    assert scores1["RAN-CELL-01"] > scores1["FIBER-LINK-01"]  # no verified signals: confidence fallback
+
+    verified = {"transport_expert": ["FIBER-LINK-01 optical Rx -41 dBm"]}
+    coverage = {"transport_expert": 1.0, "ran_expert": 0.1}
+    scores3, _ = tally_votes(hypotheses, verified=verified, coverage=coverage)
+    scores4, _ = tally_votes(hypotheses, verified=verified, coverage=coverage)
+    assert scores3 == scores4
+    assert scores3["FIBER-LINK-01"] > scores3["RAN-CELL-01"]
 
 
 def test_validation_does_not_trust_model_claim_without_real_recovery():

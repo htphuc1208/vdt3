@@ -174,8 +174,14 @@ class PipelineResult(BaseModel):
     hypotheses: list[Hypothesis] = Field(default_factory=list)
     consensus: Optional[ConsensusResult] = None
     remediation: Optional[RemediationPlan] = None
+    remediation_action: str = ""
+    remediation_target_element_id: Optional[str] = None
     validation: Optional[ValidationResult] = None
     trace: list[TraceStep] = Field(default_factory=list)
     usage: UsageStats = Field(default_factory=UsageStats)
     system: str = "multi_agent"
     latency_s: float = 0.0
+    debate_rounds: int = 0
+    # For multi-fault scenarios: whether the PRIMARY injected fault was cleared
+    # (sim-grounded; set by the pipeline runner after execution).
+    primary_fault_cleared: Optional[bool] = None

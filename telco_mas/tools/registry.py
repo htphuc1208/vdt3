@@ -11,14 +11,34 @@ from . import action_tools, kb_tools, telemetry_tools
 
 @dataclass
 class SessionContext:
-    """Everything the tools need to observe/act during one incident."""
+    """Everything the tools need to observe/act during one incident.
+
+    ``visible_domains`` implements *information partition* for domain experts:
+    when set, deep tools (diagnostics, logs, detailed KPIs) only work on elements
+    of those domains — mirroring a real NOC bridge, where the alarm board is
+    shared but deep telemetry access is per-team. ``None`` = unrestricted (used
+    by triage/validation, the single-agent baseline, and the no_partition
+    ablation).
+    """
 
     sim: NetworkSimulator
     retriever: TfidfRetriever
+    visible_domains: frozenset[str] | None = None
 
     @classmethod
     def create(cls, sim: NetworkSimulator, retriever: TfidfRetriever | None = None) -> "SessionContext":
         return cls(sim=sim, retriever=retriever or build_default_retriever())
+
+    def scoped(self, domains: set[str] | frozenset[str]) -> "SessionContext":
+        """A domain-scoped view sharing the same simulator + retriever."""
+        return SessionContext(sim=self.sim, retriever=self.retriever,
+                              visible_domains=frozenset(domains))
+
+    def can_inspect(self, element_id: str) -> bool:
+        if self.visible_domains is None:
+            return True
+        el = self.sim.topology.get(element_id)
+        return el is not None and el.domain.value in self.visible_domains
 
 
 @dataclass

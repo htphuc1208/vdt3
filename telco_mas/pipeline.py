@@ -20,6 +20,8 @@ MULTI_CONFIGS: dict[str, PipelineConfig] = {
     "no_rag": PipelineConfig(use_rag=False),
     "no_consensus": PipelineConfig(use_consensus=False),
     "no_arbiter": PipelineConfig(use_arbiter=False),
+    "no_partition": PipelineConfig(use_partition=False),
+    "no_debate": PipelineConfig(use_debate=False),
 }
 
 
@@ -41,8 +43,12 @@ def prepare(
     sim = make_simulator(scenario)
     exclude_sops = {scenario.remediation_sop} if holdout and scenario.remediation_sop else set()
     exclude_faults = {scenario.fault_type} if holdout else set()
+    # telco_v3 always includes the distractor corpus: its new fault families have
+    # only ADJACENT SOPs there (no exact answer key), so retrieval is non-trivial
+    # by construction.
+    include_distractors = kb_distractors or scenario.suite == "telco_v3"
     retriever = build_retriever(
-        include_distractors=kb_distractors,
+        include_distractors=include_distractors,
         exclude_sop_ids=exclude_sops,
         exclude_incident_fault_types=exclude_faults,
     )
@@ -62,14 +68,20 @@ def run(
     """Run one scenario.
 
     mode='single' (baseline) or one of the multi-agent labels
-    ('multi'/'full'/'no_rag'/'no_consensus'/'no_arbiter').
+    ('multi'/'full'/'no_rag'/'no_consensus'/'no_arbiter'/'no_partition'/'no_debate').
     """
     llm = llm or LLMClient()
-    ctx, incident, _ = prepare(scenario, holdout=holdout, kb_distractors=kb_distractors)
+    ctx, incident, scenario = prepare(scenario, holdout=holdout, kb_distractors=kb_distractors)
     if mode == "single":
-        return run_single_agent(incident, ctx, llm, progress=progress)
-    config = MULTI_CONFIGS.get(mode, PipelineConfig())
-    return MultiAgentOrchestrator(llm, ctx).run(incident, progress=progress, config=config)
+        result = run_single_agent(incident, ctx, llm, progress=progress)
+    else:
+        config = MULTI_CONFIGS.get(mode, PipelineConfig())
+        result = MultiAgentOrchestrator(llm, ctx).run(incident, progress=progress, config=config)
+    # Sim-grounded: was the PRIMARY injected fault cleared? (For multi-fault
+    # scenarios `is_healthy()` alone would penalize fixing the primary while an
+    # independent secondary persists.)
+    result.primary_fault_cleared = not ctx.sim.has_fault_on(scenario.element_id)
+    return result
 
 
 def run_multi_agent(scenario: Union[str, Scenario], llm: Optional[LLMClient] = None, progress: Optional[ProgressFn] = None) -> PipelineResult:

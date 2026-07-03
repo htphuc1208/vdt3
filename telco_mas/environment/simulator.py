@@ -254,6 +254,141 @@ FAULT_LIBRARY: dict[str, FaultSpec] = {
         diagnostics={"rf": "{id}: UL interference, noise floor -95 dBm, external source suspected"},
         summary="An external RF source raises the noise floor on one cell.",
     ),
+    # ----------------------------------------------------------------------- #
+    # Cross-domain masquerade faults (telco_v3 "hard" suite). The true cause is
+    # QUIET in one domain while LOUD misleading symptoms appear in another —
+    # the regime where committee diagnosis can plausibly beat a single pass.
+    # ----------------------------------------------------------------------- #
+    "FIBER_DEGRADATION": FaultSpec(
+        fault_type="FIBER_DEGRADATION", domain=Domain.TRANSPORT,
+        root_cause_label="Optical degradation on a backhaul fiber (dirty/bent connector, partial loss)",
+        root_cause_keywords=["fiber", "optical", "degrad", "attenuat", "connector", "transport"],
+        remediation_sop="SOP-TRANSPORT-FIBER",
+        remediation_keywords=["fiber", "optical", "clean", "connector", "splice", "attenuat", "patch", "repair"],
+        alarm_specs=[
+            # quiet true cause…
+            ("self", Severity.WARNING, "OPTICAL_DEGRADED", "Rx power below nominal, pre-FEC errors rising"),
+            # …loud misleading downstream symptoms that LOOK like radio interference
+            ("downstream", Severity.MAJOR, "HIGH_BLER", "Elevated block error rate on the air interface"),
+            ("downstream", Severity.MAJOR, "DEGRADED_QOS", "User throughput degraded"),
+        ],
+        kpi_overrides=[
+            ("self", "optical_rx_power", -24.5),
+            ("self", "packet_loss", 2.8),
+            ("downstream", "ul_bler", 19.0),
+            ("downstream", "dl_throughput_mbps", 28.0),
+            ("downstream", "latency_ms", 55.0),
+        ],
+        log_specs=[
+            ("self", "WARNING", "{id}: Rx power -24.5 dBm (nominal -8), pre-FEC BER rising, intermittent CRC"),
+            ("downstream", "MAJOR", "{id}: BLER elevated, retransmissions up — RF interference suspected"),
+        ],
+        diagnostics={
+            "optical_power": "{id}: Rx = -24.5 dBm, degraded (nominal -8 dBm; LOS threshold -30 dBm) — connector loss suspected",
+            "interface_status": "{id}: UP but errored — intermittent CRC, pre-FEC BER above threshold",
+        },
+        summary="A degrading fiber mimics radio interference on all downstream cells.",
+    ),
+    "POWER_BROWNOUT": FaultSpec(
+        fault_type="POWER_BROWNOUT", domain=Domain.POWER,
+        root_cause_label="Voltage sag (brownout) at the site rectifier causing intermittent element resets",
+        root_cause_keywords=["power", "voltage", "brownout", "sag", "rectifier"],
+        remediation_sop="SOP-POWER-RESTORE",
+        remediation_keywords=["voltage", "regulator", "rectifier", "power", "stabiliz", "generator", "mains"],
+        alarm_specs=[
+            ("self", Severity.WARNING, "VOLTAGE_SAG", "DC bus voltage below nominal, within battery float"),
+            ("site", Severity.MAJOR, "INTERMITTENT_RESTART", "Element restarting sporadically"),
+            ("site", Severity.MAJOR, "NODE_FLAPPING", "Reachability flapping"),
+        ],
+        kpi_overrides=[
+            ("self", "battery_level", 88.0),
+            ("site", "rrc_setup_success_rate", 71.0),
+            ("site", "packet_loss", 4.5),
+            ("site", "dl_throughput_mbps", 35.0),
+        ],
+        log_specs=[
+            ("self", "WARNING", "{id}: DC bus 44.1V (nominal 54V), sag events correlated with load peaks"),
+            ("site", "MAJOR", "{id}: unexpected warm restart, watchdog reset — cause unknown"),
+        ],
+        diagnostics={
+            "power": "{id}: mains present but sagging — 44.1V DC bus, brownout events logged (nominal 54V)",
+        },
+        summary="A brownout mimics random hardware/radio instability across a whole site.",
+    ),
+    "GPS_SYNC_LOSS": FaultSpec(
+        fault_type="GPS_SYNC_LOSS", domain=Domain.RAN,
+        root_cause_label="GNSS timing loss on a gNodeB — holdover drift causing TDD cross-interference",
+        root_cause_keywords=["gps", "gnss", "sync", "timing", "holdover"],
+        remediation_sop="SOP-RAN-GPS-SYNC-LOSS",
+        remediation_keywords=["gps", "gnss", "sync", "timing", "ptp", "antenna", "holdover"],
+        alarm_specs=[
+            ("self", Severity.WARNING, "SYNC_HOLDOVER", "GNSS lost, running on holdover oscillator"),
+            ("downstream", Severity.MAJOR, "HIGH_INTERFERENCE", "Elevated uplink noise / BLER"),
+            ("site", Severity.MAJOR, "HIGH_INTERFERENCE", "Elevated uplink noise on co-site cells"),
+        ],
+        kpi_overrides=[
+            ("downstream", "ul_bler", 24.0),
+            ("downstream", "dl_throughput_mbps", 22.0),
+            ("site", "ul_bler", 17.0),
+        ],
+        log_specs=[
+            ("self", "WARNING", "{id}: GNSS receiver lost lock 47 min ago, holdover drift 3.1us (limit 1.5us)"),
+            ("downstream", "MAJOR", "{id}: uplink noise floor raised, BLER high — interference suspected"),
+        ],
+        diagnostics={
+            "sync": "{id}: GNSS UNLOCKED, holdover exceeded — timing drift causing TDD slot overlap",
+            "rf": "{id}: interference pattern is structured/slot-aligned — consistent with timing drift, not external RF",
+        },
+        summary="Timing drift masquerades as external interference across co-site cells.",
+    ),
+    "UPF_DEGRADATION": FaultSpec(
+        fault_type="UPF_DEGRADATION", domain=Domain.CORE,
+        root_cause_label="Core user-plane (UPF) packet-processing degradation raising latency network-wide",
+        root_cause_keywords=["upf", "user plane", "core", "latency", "degrad", "overload"],
+        remediation_sop="SOP-CORE-SCALEOUT",
+        remediation_keywords=["upf", "scale", "restart", "capacity", "instance", "drain", "user plane"],
+        alarm_specs=[
+            ("self", Severity.MINOR, "UP_LATENCY_DEGRADED", "Packet processing latency above SLO"),
+            ("all_ran", Severity.MAJOR, "DEGRADED_QOS", "User throughput/latency degraded"),
+        ],
+        kpi_overrides=[
+            ("self", "cpu_utilization", 91.0),
+            ("self", "latency_ms", 46.0),
+            ("all_ran", "latency_ms", 64.0),
+            ("all_ran", "dl_throughput_mbps", 30.0),
+        ],
+        log_specs=[
+            ("self", "MINOR", "{id}: packet queue depth growing, per-packet latency 4x baseline"),
+            ("all_ran", "MAJOR", "{id}: user complaints, high latency — congestion suspected"),
+        ],
+        diagnostics={
+            "resource": "{id}: CPU 91%, packet queue saturated — user-plane processing degraded",
+        },
+        summary="A degraded UPF looks like radio/transport congestion at every site at once.",
+    ),
+}
+
+# --------------------------------------------------------------------------- #
+# Semantic remediation matching. The environment accepts any action that names
+# the right FIX FAMILY for the active fault and targets the right element —
+# it does NOT require the operator's exact SOP phrasing. This removes the
+# keyword-gate artifact where correct fixes phrased differently were rejected.
+# --------------------------------------------------------------------------- #
+ACTION_SYNONYMS: dict[str, list[str]] = {
+    "FIBER_CUT": ["restore link", "fix fiber", "physical repair", "re-splice", "reroute"],
+    "CELL_OUTAGE": ["power cycle", "restore cell", "bring back", "reinitialize", "hard reset"],
+    "CONGESTION": ["expand capacity", "additional carrier", "redistribute", "traffic management", "rebalanc", "load balanc"],
+    "MISCONFIG": ["revert", "restore config", "undo change", "roll back", "previous configuration"],
+    "HARDWARE_FAILURE": ["swap", "replace card", "rma", "replace module", "hardware replacement"],
+    "POWER_OUTAGE": ["restore power", "portable generator", "fuel", "grid restoration"],
+    "CORE_OVERLOAD": ["add capacity", "scale out", "load shed", "add instance", "horizontal scal"],
+    "DNS_FAILURE": ["failover", "switch resolver", "restart dns", "secondary dns"],
+    "LICENSE_EXHAUSTION": ["expand license", "increase limit", "procure", "raise the cap", "entitlement"],
+    "INTERFERENCE": ["locate the source", "remove source", "mitigate", "filter", "spectrum clearance"],
+    "FIBER_DEGRADATION": ["clean the connector", "reseat", "replace patch cord", "re-terminate", "optical repair"],
+    "POWER_BROWNOUT": ["voltage regulator", "stabilize", "condition the power", "ups", "regulate"],
+    "GPS_SYNC_LOSS": ["restore timing", "ptp fallback", "replace gnss antenna", "resync", "timing source"],
+    "UPF_DEGRADATION": ["scale the upf", "restart the upf", "drain traffic", "add upf instance"],
 }
 
 
@@ -310,6 +445,8 @@ class NetworkSimulator:
             return [e.id for e in self.topology.at_site(el.site) if e.id != el.id]
         if scope == "parent" and el.parent_id:
             return [el.parent_id]
+        if scope == "all_ran":  # core user-plane cascades hit every cell
+            return [e.id for e in self.topology.all() if e.type.value == "CELL"]
         return []
 
     def _overrides_for(self, element_id: str) -> dict[str, float]:
@@ -401,28 +538,44 @@ class NetworkSimulator:
         return f"{element_id}: {check} check nominal (no fault detected on this element)."
 
     # -- remediation ---------------------------------------------------------
+    def has_fault_on(self, element_id: str) -> bool:
+        return any(f.element_id == element_id for f in self.active)
+
     def apply_remediation(self, action: str, element_id: str | None = None) -> dict:
-        """Attempt a fix. Succeeds only when it targets the real fault correctly."""
+        """Attempt a fix, judged SEMANTICALLY.
+
+        A fix succeeds when it (a) names the correct fix *family* for the active
+        fault — via SOP keywords, broadened action synonyms, or the SOP id — and
+        (b) targets the faulty element (explicit ``element_id``, the element named
+        in the action text, or implicitly when only one fault is active).
+        Exact SOP phrasing is NOT required.
+        """
         action_l = (action or "").lower()
         for fault in list(self.active):
             faulty = fault.element_id
             spec = fault.spec
-            keyword_hit = any(k in action_l for k in spec.remediation_keywords) or spec.remediation_sop.lower() in action_l
+            stems = [k.lower() for k in spec.remediation_keywords]
+            stems += [s.lower() for s in ACTION_SYNONYMS.get(spec.fault_type, [])]
+            stems.append(spec.remediation_sop.lower())
+            matched_stem = next((s for s in stems if s in action_l), None)
             target_ok = (
-                element_id is None
-                or element_id == faulty
+                element_id == faulty
                 or faulty.lower() in action_l
+                or (element_id is None and len(self.active) == 1)
             )
-            if keyword_hit and target_ok:
+            if matched_stem and target_ok:
                 self.clear(faulty)
                 return {
                     "status": "resolved",
                     "element_id": faulty,
+                    "matched_fix_family": spec.fault_type,
+                    "matched_on": matched_stem,
                     "message": f"Remediation applied to {faulty}; KPIs recovered to normal.",
                 }
         if self.active:
             return {
                 "status": "no_effect",
-                "message": "Action applied but KPIs did NOT recover — wrong target or wrong fix; root cause persists.",
+                "message": "Action applied but KPIs did NOT recover — wrong target or wrong fix family; "
+                           "root cause persists. Re-investigate and try a different fix.",
             }
         return {"status": "already_healthy", "message": "Network is already healthy."}

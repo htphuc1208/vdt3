@@ -12,14 +12,25 @@ from typing import Optional
 from .agents.base import BaseAgent, as_float, as_str, incident_brief
 from .llm import LLMClient
 from .schemas import (ConsensusResult, Incident, PipelineResult, RemediationPlan,
-                      UsageStats, ValidationResult)
+                      TraceStep, UsageStats, ValidationResult)
 from .tools.registry import SessionContext
 
-SYSTEM = """You are an autonomous NOC engineer for a 5G network handling one incident end to end.
-Investigate with the tools, determine the SINGLE root-cause element, then FIX it by calling
-`apply_remediation` with a correct action on the correct element, and verify it recovered.
+# STRONG baseline by design (biased AGAINST our own multi-agent hypothesis):
+# full unrestricted tool access to every domain, a generous tool budget matching
+# the whole team's, and explicit verify-and-retry instructions.
+SINGLE_AGENT_MAX_ITERS = 24
 
-Remember: many alarms usually share one upstream root cause — follow the topology dependency chain.
+SYSTEM = """You are an autonomous NOC engineer for a 5G network handling one incident end to end.
+You have UNRESTRICTED access to every tool and every domain (RAN, transport, core, power), and a
+generous tool budget — use it.
+
+Investigate, determine the SINGLE root-cause element, then FIX it by calling `apply_remediation`
+with a correct action on the correct element, and VERIFY recovery by re-checking alarms/KPIs.
+If the fix did not take effect, re-investigate and try a different fix — you have budget for
+multiple attempts.
+
+Remember: many alarms usually share one upstream root cause — follow the topology dependency chain,
+and run diagnostics on your suspect to confirm before fixing.
 
 When finished, respond with ONLY a JSON object:
 {"root_cause": "one sentence",
@@ -41,7 +52,7 @@ class SingleAgentBaseline(BaseAgent):
         if progress:
             progress("Single monolithic agent handling the whole incident…")
         started = time.time()
-        run = self.invoke(SYSTEM, incident_brief(incident))
+        run = self.invoke(SYSTEM, incident_brief(incident), max_iters=SINGLE_AGENT_MAX_ITERS)
         d = run.data
         consensus = ConsensusResult(
             root_cause=as_str(d.get("root_cause"), "Undetermined"),
@@ -50,6 +61,7 @@ class SingleAgentBaseline(BaseAgent):
             confidence=as_float(d.get("confidence"), 0.5),
             explanation="single-agent baseline (no expert team, no consensus vote)",
         )
+        action, target = _first_apply_remediation(run.trace)
         # Ground resolution in the actual network state, never just the model's claim.
         resolved = self.ctx.sim.is_healthy()
         result = PipelineResult(
@@ -57,12 +69,24 @@ class SingleAgentBaseline(BaseAgent):
             system="single_agent",
             consensus=consensus,
             remediation=RemediationPlan(summary=as_str(d.get("remediation_summary"))),
+            remediation_action=action or as_str(d.get("remediation_summary")),
+            remediation_target_element_id=target or consensus.faulty_element_id,
             validation=ValidationResult(resolved=resolved, notes=as_str(d.get("remediation_summary"))),
             trace=run.trace,
             usage=run.usage or UsageStats(),
             latency_s=round(time.time() - started, 2),
         )
         return result
+
+
+def _first_apply_remediation(trace: list[TraceStep]) -> tuple[str, str | None]:
+    for step in trace:
+        for call in step.tool_calls:
+            if call.name == "apply_remediation":
+                action = as_str(call.arguments.get("action"))
+                target = as_str(call.arguments.get("element_id")) or None
+                return action, target
+    return "", None
 
 
 def run_single_agent(incident: Incident, ctx: SessionContext, llm: Optional[LLMClient] = None, progress=None) -> PipelineResult:

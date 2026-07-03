@@ -18,8 +18,8 @@ and validating a fix.
 Real incident handling is a pipeline of specialised steps — detection, root-cause analysis,
 data correlation, remediation and verification — and a single alarm storm usually has **one**
 upstream root cause hidden behind many downstream symptoms. TelcoMAS mirrors that pipeline
-with cooperating agents and shows, via a benchmark, that decomposition + consensus **localises
-the true root cause more reliably** than a single agent.
+with cooperating agents and includes benchmarks for comparing decomposition + consensus
+against a single-agent baseline under controlled RCA conditions.
 
 The design synthesises ideas from the reference literature (see the report):
 
@@ -37,12 +37,14 @@ The design synthesises ideas from the reference literature (see the report):
 2. **Correlation** — RAG over SOP playbooks and historical incidents.
 3. **Diagnosis experts** — RAN, Transport & Infrastructure, and Core specialists each propose a
    ranked root-cause hypothesis (element + fault type + confidence + evidence).
-4. **Consensus** — a confidence-weighted vote over the experts, resolved by an LLM arbiter.
+4. **Consensus** — a verifiable-evidence vote over the experts, resolved by an LLM arbiter.
 5. **Remediation** — turn the confirmed cause into a concrete, SOP-based plan.
 6. **Validation** — apply the fix (simulated) and verify KPIs/alarms recover.
 
 A **single-agent baseline** (one agent, all tools, no team, no consensus) is included for
-comparison in the benchmark.
+comparison in the benchmark. The baseline is deliberately strong: unrestricted tools and a
+larger tool budget, so any multi-agent advantage must come from information partitioning,
+cross-examination, and consensus rather than a weakened control.
 
 ## Install
 
@@ -125,19 +127,38 @@ make bench-openrca ARGS="--limit 3 --out results/openrca_smoke.json"
 
 # ablation: isolate the contribution of RAG / consensus / arbiter (real switches, not aliases)
 make bench ARGS="--systems full,single,no_rag,no_consensus,no_arbiter --runs 3 --no-cache"
+# writes results/ablation_telco_v1_runs3.json unless --out is supplied
 
 # construct-validity control: hold out the exactly-matching SOP + add distractor SOPs
 make bench ARGS="--systems full,single --holdout-sop --kb-distractors --no-cache"
+# writes results/construct_holdout_distractors_telco_v1.json unless --out is supplied
+
+# larger synthetic stress suite (60 cases, balanced across 10 fault families)
+make bench ARGS="--suite telco_v2 --systems full,single,no_rag,no_consensus,no_arbiter --runs 3 --no-cache"
+
+# hard-regime hypothesis test: large topology, cross-domain masquerades, partition/debate ablations
+make bench ARGS="--suite telco_v3 --systems full,single,no_rag,no_consensus,no_arbiter,no_partition,no_debate --runs 3 --no-cache --out results/telco_v3_ablation_runs3.json"
+
+# live label-safe RCAEval LLM baseline; profile mode remains only a smoke test
+make bench ARGS="--suite rcaeval --external-mode llm --sample 30 --systems full,single --no-cache"
 ```
 
-Fault type is scored by **semantic family match** (fair to both systems), not exact-enum
-string compliance. `--cache-only` replays cached completions offline (no live spend).
+The headline diagnosis metric is now **strict**: correct element + semantic fault-family
+match + causal explanation. The loose root-cause keyword metric is retained only as a
+secondary diagnostic signal. The benchmark also reports remediation target/action/SOP
+correctness, simulator-grounded resolution, Wilson confidence intervals, exact paired
+McNemar tests, scenario-level paired bootstrap effects, and solved-cases-per-10k-tokens.
+`telco_v1` is a ceiling-effect feasibility control, `telco_v2` broadens synthetic coverage,
+and `telco_v3` is the only suite intended to test the conditional claim that multi-agent
+RCA can beat a strong single-agent baseline in hard, information-partitioned RCA cases.
+`--cache-only` replays cached completions offline (no live spend).
 
 Data layout:
 
 * `data/rcaeval` is a symlink to `/home/phucht/project/vdt2/data/rcaeval` and should contain 735 cases (RE1=375, RE2=270, RE3=90).
 * `data/openrca` is a placeholder. Put OpenRCA data there or set `OPENRCA_DATA_DIR` to a directory containing `Telecom/query.csv` and `Telecom/telemetry`.
 * Public-data adapters expose label-safe runtime payloads; scoring labels such as RCAEval roots and OpenRCA `scoring_points` are used only by evaluators.
+* RCAEval `profile` mode is an ingestion/scoring smoke test and must not be reported as multi-agent evidence; use `--external-mode llm` for live label-safe LLM predictions.
 
 The research manuscript is `report/report.md`; the original VDT-style report is preserved as
 `report/report_vdt2026.md`.

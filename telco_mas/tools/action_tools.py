@@ -9,6 +9,9 @@ def run_diagnostic(ctx: Any, element_id: str, check: str | None = None) -> str:
     sim = ctx.sim
     if element_id not in sim.topology:
         return json.dumps({"error": f"unknown element {element_id}"})
+    if not ctx.can_inspect(element_id):
+        return json.dumps({"error": f"{element_id} is outside your domain — deep diagnostics on it "
+                                    "belong to another expert team. State what you need in your findings."})
     if check:
         return json.dumps({"element_id": element_id, "check": check, "result": sim.run_diagnostic(element_id, check)})
     # No specific check: run every diagnostic that any active fault exposes for this element.

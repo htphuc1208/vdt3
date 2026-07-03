@@ -12,13 +12,18 @@ _LABELS = {
     "multi_agent": "Multi-Agent (TelcoMAS)", "full": "Multi-Agent (full)", "multi": "Multi-Agent",
     "single_agent": "Single-Agent baseline", "single": "Single-Agent",
     "no_rag": "− RAG", "no_consensus": "− consensus", "no_arbiter": "− arbiter",
+    "no_partition": "− partition", "no_debate": "− debate",
 }
 _COLORS = {
     "multi_agent": "#2563eb", "full": "#2563eb", "multi": "#2563eb",
     "single_agent": "#9ca3af", "single": "#9ca3af",
     "no_rag": "#f59e0b", "no_consensus": "#ef4444", "no_arbiter": "#8b5cf6",
+    "no_partition": "#10b981", "no_debate": "#0ea5e9",
 }
-_ORDER = ["multi_agent", "full", "multi", "single_agent", "single", "no_rag", "no_consensus", "no_arbiter"]
+_ORDER = [
+    "multi_agent", "full", "multi", "single_agent", "single",
+    "no_rag", "no_consensus", "no_arbiter", "no_partition", "no_debate",
+]
 
 
 def _label(system: str) -> str:
@@ -33,8 +38,10 @@ def make_charts(summary: dict, outdir: str = "report/figures") -> list[str]:
     # --- accuracy comparison ---
     metrics = [
         ("localization_accuracy", "Localization"),
-        ("root_cause_accuracy", "Root cause"),
-        ("diagnosis_accuracy", "Diagnosis"),
+        ("fault_type_accuracy", "Fault type"),
+        ("causal_explanation_accuracy", "Causal"),
+        ("diagnosis_accuracy", "Strict diagnosis"),
+        ("end_to_end_accuracy", "End-to-end"),
         ("resolution_rate", "Resolution"),
     ]
     fig, ax = plt.subplots(figsize=(8, 4.5))

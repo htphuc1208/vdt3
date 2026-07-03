@@ -77,3 +77,46 @@ class Topology:
 
 def build_default_topology() -> Topology:
     return Topology()
+
+
+def build_large_topology() -> Topology:
+    """A ~95-element two-region network (superset of the default topology).
+
+    Rationale (telco_v3 "hard" suite): on the 19-element default topology a single
+    agent can enumerate everything in a couple of tool calls, so search cost — the
+    real-world bottleneck motivating agent decomposition (Roy et al. 2024; OpenRCA's
+    68GB telemetry) — never appears. Here exploration is genuinely expensive.
+    Every default element is preserved, so telco_v1 scenarios remain valid.
+    """
+    elements = list(_ELEMENTS)
+
+    def add(id: str, name: str, type_: ElementType, domain: Domain,
+            parent: str | None = None, site: str | None = None) -> None:
+        elements.append(NetworkElement(id=id, name=name, type=type_, domain=domain,
+                                       parent_id=parent, site=site))
+
+    # Region-B backbone hanging off the core gateway
+    add("FIBER-LINK-02", "Backhaul Fiber B", ElementType.FIBER_LINK, Domain.TRANSPORT, "CORE-RTR-01")
+    add("TRANSPORT-RTR-03", "Aggregation Router C", ElementType.ROUTER, Domain.TRANSPORT, "FIBER-LINK-02")
+    add("FIBER-LINK-03", "Backhaul Fiber C", ElementType.FIBER_LINK, Domain.TRANSPORT, "CORE-RTR-01")
+    add("TRANSPORT-RTR-04", "Aggregation Router D", ElementType.ROUTER, Domain.TRANSPORT, "FIBER-LINK-03")
+    # Extra core capacity
+    add("CORE-UDM-01", "UDM (Subscriber Data)", ElementType.CORE_NF, Domain.CORE)
+    add("CORE-PCF-01", "PCF (Policy)", ElementType.CORE_NF, Domain.CORE)
+
+    # Six additional sites, C..H: switch + power + 2 gNBs x 3 cells each
+    site_specs = [("C", "TRANSPORT-RTR-01"), ("D", "TRANSPORT-RTR-02"),
+                  ("E", "TRANSPORT-RTR-03"), ("F", "TRANSPORT-RTR-03"),
+                  ("G", "TRANSPORT-RTR-04"), ("H", "TRANSPORT-RTR-04")]
+    for idx, (letter, uplink) in enumerate(site_specs, start=3):
+        site = f"SITE-{letter}"
+        sw = f"AGG-SW-{idx:02d}"
+        add(sw, f"Access Switch {letter}", ElementType.AGG_SWITCH, Domain.TRANSPORT, uplink, site)
+        add(f"PWR-RECT-{idx:02d}", f"Rectifier {site}", ElementType.POWER_UNIT, Domain.POWER, None, site)
+        for g in (1, 2):
+            gnb = f"RAN-GNB-{letter}{g}"
+            add(gnb, f"gNodeB {letter}{g}", ElementType.GNB, Domain.RAN, sw, site)
+            for c in (1, 2, 3):
+                add(f"RAN-CELL-{letter}{g}-{c}", f"Cell {letter}{g}-{c}", ElementType.CELL, Domain.RAN, gnb, site)
+
+    return Topology(elements)

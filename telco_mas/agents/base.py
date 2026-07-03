@@ -62,6 +62,7 @@ class BaseAgent:
         system_prompt: str,
         user_prompt: str,
         tool_names: Optional[list[str]] = None,
+        max_iters: Optional[int] = None,
     ) -> AgentRun:
         names = tool_names if tool_names is not None else self.tool_names
         specs = openai_specs(names) if names else None
@@ -71,4 +72,5 @@ class BaseAgent:
             user_prompt=user_prompt,
             tools_spec=specs,
             dispatcher=self._dispatch,
+            max_iters=max_iters,
         )

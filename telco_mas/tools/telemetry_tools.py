@@ -53,9 +53,23 @@ def query_kpis(ctx: Any, element_id: str | None = None, metric: str | None = Non
     samples = ctx.sim.get_kpis(element_id=element_id, metric=metric)
     if not samples:
         return json.dumps({"note": "no KPI anomalies found for that query", "samples": []})
-    return json.dumps([s.model_dump() for s in samples], default=str)
+    out = []
+    for s in samples:
+        if ctx.can_inspect(s.element_id):
+            out.append(s.model_dump())
+        else:
+            # Out-of-domain elements: coarse view only (shared NOC board shows
+            # WHERE anomalies are; detailed counters belong to the domain team).
+            out.append({"element_id": s.element_id, "metric": s.metric,
+                        "is_anomalous": s.is_anomalous,
+                        "note": "detail restricted — outside your domain"})
+    return json.dumps(out, default=str)
 
 
 def query_logs(ctx: Any, element_id: str | None = None, level: str | None = None, limit: int = 20) -> str:
+    if element_id and not ctx.can_inspect(element_id):
+        return json.dumps({"error": f"{element_id} is outside your domain — its logs belong to "
+                                    "another expert team. Report your findings to the bridge instead."})
     logs = ctx.sim.get_logs(element_id=element_id, level=level, limit=limit)
+    logs = [l for l in logs if ctx.can_inspect(l.element_id)]
     return json.dumps([l.model_dump() for l in logs], default=str)
