@@ -85,8 +85,11 @@ class OpenRCADataset:
         for row_id in range(max(0, start_row), stop):
             yield self.get_runtime_task(row_id)
 
+    def iter_runtime_tasks_by_id(self, row_ids: Iterable[int]) -> Iterator[dict[str, Any]]:
+        for row_id in row_ids:
+            yield self.get_runtime_task(int(row_id))
+
     def _row(self, row_id: int) -> dict[str, str]:
         if row_id < 0 or row_id >= len(self.rows):
             raise OpenRCADatasetError(f"row_id {row_id} outside query.csv range 0..{len(self.rows) - 1}")
         return self.rows[row_id]
-

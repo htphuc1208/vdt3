@@ -6,7 +6,7 @@ not the model's reasoning quality.
 """
 import json
 
-from telco_mas.agents.orchestrator import MultiAgentOrchestrator
+from telco_mas.agents.orchestrator import MultiAgentOrchestrator, PipelineConfig
 from telco_mas.baseline import run_single_agent
 from telco_mas.llm import LLMClient
 from telco_mas.pipeline import prepare
@@ -65,9 +65,10 @@ def test_multi_agent_pipeline_smoke():
     result = MultiAgentOrchestrator(llm, ctx).run(incident)
 
     assert result.system == "multi_agent"
-    assert len(result.hypotheses) == 3
+    assert len(result.hypotheses) == 4
     assert result.consensus and result.consensus.faulty_element_id == TARGET
     assert result.validation and result.validation.resolved is True
+    assert result.remediation_attempts == 1
     assert ctx.sim.is_healthy()  # validation actually applied the fix
     assert result.usage.llm_calls > 0 and result.usage.tool_calls > 0
     assert result.trace
@@ -81,3 +82,81 @@ def test_single_agent_baseline_smoke():
     assert result.consensus.faulty_element_id == TARGET
     assert result.validation.resolved is True
     assert ctx.sim.is_healthy()
+
+
+def test_multi_agent_replans_once_after_no_effect_remediation():
+    state = {"remediation_round": 0}
+
+    def responder(messages, tools):
+        system = messages[0]["content"]
+        used_tool = any(message.get("role") == "tool" for message in messages)
+        if "triage agent" in system:
+            return _final({
+                "severity": "MAJOR",
+                "suspected_domain": "CORE",
+                "affected_elements": ["CORE-UPF-01"],
+                "summary": "network-wide user-plane degradation",
+            })
+        if "knowledge-correlation" in system:
+            return _final({"notes": "UPF packet processing is degraded"})
+        if "remediation agent" in system:
+            state["remediation_round"] += 1
+            if state["remediation_round"] == 1:
+                return _final({
+                    "sop_id": "SOP-RAN-CONGESTION",
+                    "summary": "optimize configuration",
+                    "steps": ["change settings"],
+                    "expected_outcome": "latency improves",
+                    "action": "Optimize configurations on CORE-UPF-01",
+                    "target_element_id": "CORE-UPF-01",
+                })
+            return _final({
+                "sop_id": "SOP-CORE-SCALEOUT",
+                "summary": "drain and scale the UPF",
+                "steps": ["drain traffic", "scale instance"],
+                "expected_outcome": "user-plane latency recovers",
+                "action": "Drain traffic and scale the UPF instance on CORE-UPF-01",
+                "target_element_id": "CORE-UPF-01",
+            })
+        if "validation agent" in system:
+            if not used_tool:
+                user = messages[-1]["content"]
+                action = user.split("Proposed remediation action: ", 1)[1].splitlines()[0]
+                return _tool_call(
+                    "apply_remediation",
+                    {"action": action, "element_id": "CORE-UPF-01"},
+                )
+            return _final({
+                "resolved": state["remediation_round"] > 1,
+                "notes": "recovery checked",
+                "recovered_kpis": ["latency_ms@CORE-UPF-01"],
+            })
+        if "expert" in system:
+            return _final({
+                "faulty_element_id": "CORE-UPF-01",
+                "fault_type": "UPF_DEGRADATION",
+                "root_cause": "UPF user-plane packet processing degradation raises latency",
+                "confidence": 0.9,
+                "rationale": "shared core path explains every site",
+                "evidence": ["UP latency degraded"],
+            })
+        return _final({})
+
+    llm = LLMClient(responder=responder, cache_enabled=False)
+    ctx, incident, _ = prepare("v3_upf_degradation")
+
+    result = MultiAgentOrchestrator(llm, ctx).run(incident)
+
+    assert result.validation and result.validation.resolved is True
+    assert result.remediation_attempts == 2
+    assert "scale the UPF" in result.remediation_action
+    assert not ctx.sim.has_fault_on("CORE-UPF-01")
+
+    state["remediation_round"] = 0
+    no_repair_ctx, no_repair_incident, _ = prepare("v3_upf_degradation")
+    no_repair = MultiAgentOrchestrator(llm, no_repair_ctx).run(
+        no_repair_incident,
+        config=PipelineConfig(use_repair=False),
+    )
+    assert no_repair.remediation_attempts == 1
+    assert no_repair_ctx.sim.has_fault_on("CORE-UPF-01")

@@ -5,6 +5,7 @@ agents and the evaluation harness.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
 
@@ -59,6 +60,8 @@ class Alarm(BaseModel):
     severity: Severity
     name: str
     probable_cause: str
+    raised_at: Optional[datetime] = None
+    cleared_at: Optional[datetime] = None
 
 
 class KPISample(BaseModel):
@@ -68,12 +71,14 @@ class KPISample(BaseModel):
     unit: str
     normal_range: tuple[float, float]
     is_anomalous: bool
+    timestamp: Optional[datetime] = None
 
 
 class LogEntry(BaseModel):
     element_id: str
     level: str
     message: str
+    timestamp: Optional[datetime] = None
 
 
 # --------------------------------------------------------------------------- #
@@ -182,6 +187,7 @@ class PipelineResult(BaseModel):
     system: str = "multi_agent"
     latency_s: float = 0.0
     debate_rounds: int = 0
+    remediation_attempts: int = 0
     # For multi-fault scenarios: whether the PRIMARY injected fault was cleared
     # (sim-grounded; set by the pipeline runner after execution).
     primary_fault_cleared: Optional[bool] = None

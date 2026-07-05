@@ -21,12 +21,20 @@ import json
 from dataclasses import dataclass
 from typing import Optional
 
+from ..knowledge.fault_ontology import (
+    FAULT_EXPLANATIONS,
+    canonicalize_fault_type,
+    direct_root_condition_families,
+    domain_compatible,
+    earliest_specific_root_candidates,
+)
 from ..schemas import ConsensusResult, Hypothesis, Incident, TraceStep, UsageStats
 from .base import BaseAgent, as_float, as_str, incident_brief
 
 AGREEMENT_BONUS = 0.15
 VERIFIED_BONUS = 0.35
 COVERAGE_WEIGHT = 0.30
+CAUSAL_SUPPORT_WEIGHT = 0.65
 LOW_MARGIN = 0.20
 ABSTAIN_THRESHOLD = 0.35
 
@@ -46,6 +54,7 @@ class Calibration:
 DEFAULT_CALIBRATION: dict[str, Calibration] = {
     "ran_expert": Calibration(0.82, 0.0),
     "transport_expert": Calibration(0.86, 0.0),
+    "power_expert": Calibration(0.84, 0.0),
     "core_expert": Calibration(0.84, 0.0),
 }
 
@@ -95,6 +104,7 @@ def tally_votes(
     calibration: dict[str, Calibration] | None = None,
     verified: dict[str, list[str]] | None = None,
     coverage: dict[str, float] | None = None,
+    causal_support: dict[str, float] | None = None,
 ) -> tuple[dict[str, float], dict[str, list[Hypothesis]]]:
     """Verifiable-evidence-weighted vote per candidate element.
 
@@ -105,15 +115,24 @@ def tally_votes(
     calibration = calibration or DEFAULT_CALIBRATION
     verified = verified or {}
     coverage = coverage or {}
+    causal_support = causal_support or {}
     scores: dict[str, float] = {}
     backers: dict[str, list[Hypothesis]] = {}
     for h in hypotheses:
         el = h.faulty_element_id or "UNKNOWN"
         cal = calibration.get(h.proposed_by, Calibration())
         vote = cal.apply(h.confidence)
-        if verified.get(h.proposed_by):
-            vote += VERIFIED_BONUS
-        vote += COVERAGE_WEIGHT * coverage.get(h.proposed_by, 0.0)
+        support = causal_support.get(h.proposed_by, 0.0)
+        if support <= -1.0:
+            # A canonical fault family on an impossible equipment domain is
+            # structurally invalid, regardless of model self-confidence.
+            vote = 0.0
+        else:
+            if verified.get(h.proposed_by):
+                vote += VERIFIED_BONUS
+            vote += COVERAGE_WEIGHT * coverage.get(h.proposed_by, 0.0)
+            vote += CAUSAL_SUPPORT_WEIGHT * support
+            vote = max(0.0, vote)
         scores[el] = scores.get(el, 0.0) + round(vote, 4)
         backers.setdefault(el, []).append(h)
     for el, hs in backers.items():
@@ -153,9 +172,20 @@ class ConsensusModule(BaseAgent):
         hypotheses: list[Hypothesis],
         expert_traces: Optional[dict[str, list[TraceStep]]] = None,
         use_arbiter: bool = True,
+        use_evidence_verifier: bool = True,
     ):
         expert_traces = expert_traces or {}
         symptomatic = {a.element_id for a in incident.alarms}
+        hypotheses = [
+            _normalize_hypothesis(hypothesis, incident, self.ctx.sim.topology)
+            for hypothesis in hypotheses
+        ]
+        if use_evidence_verifier:
+            hypotheses += _missing_ontology_candidates(
+                hypotheses,
+                incident,
+                self.ctx.sim.topology,
+            )
         verified = {
             h.proposed_by: verified_diagnostic_findings(expert_traces.get(h.proposed_by), h.faulty_element_id)
             for h in hypotheses
@@ -164,15 +194,29 @@ class ConsensusModule(BaseAgent):
             h.proposed_by: round(topology_coverage(self.ctx.sim.topology, h.faulty_element_id, symptomatic), 3)
             for h in hypotheses
         }
+        causal_support = (
+            {
+                h.proposed_by: _causal_support(h, incident, self.ctx.sim.topology)
+                for h in hypotheses
+            }
+            if use_evidence_verifier
+            else {}
+        )
 
-        scores, backers = tally_votes(hypotheses, verified=verified, coverage=coverage)
+        scores, backers = tally_votes(
+            hypotheses,
+            verified=verified,
+            coverage=coverage,
+            causal_support=causal_support,
+        )
         ranked = sorted(hypotheses, key=lambda h: scores.get(h.faulty_element_id or "UNKNOWN", 0.0), reverse=True)
         top_el = max(scores, key=scores.get) if scores else None
         top_hyp = next((h for h in ranked if h.faulty_element_id == top_el), ranked[0] if ranked else None)
 
         signal_note = "; ".join(
             f"{h.proposed_by}: verified={'yes' if verified.get(h.proposed_by) else 'no'}, "
-            f"coverage={coverage.get(h.proposed_by, 0.0):.2f}"
+            f"coverage={coverage.get(h.proposed_by, 0.0):.2f}, "
+            f"causal_support={causal_support.get(h.proposed_by, 0.0):.2f}"
             for h in hypotheses
         )
 
@@ -198,6 +242,7 @@ class ConsensusModule(BaseAgent):
         expert_block = "\n".join(
             f"- {h.proposed_by}: element={h.faulty_element_id}, type={h.fault_type}, "
             f"confidence={h.confidence:.2f}, topology_coverage={coverage.get(h.proposed_by, 0.0):.2f}\n"
+            f"    causal_support={causal_support.get(h.proposed_by, 0.0):.2f}\n"
             f"    root_cause: {h.root_cause}\n"
             f"    VERIFIED diagnostics on the blamed element: "
             f"{'; '.join(verified.get(h.proposed_by, [])) or 'NONE (never confirmed by a diagnostic)'}"
@@ -216,6 +261,12 @@ class ConsensusModule(BaseAgent):
         faulty = as_str(d.get("faulty_element_id")) or top_el
         fault_type = as_str(d.get("fault_type")) or (top_hyp.fault_type if top_hyp else None)
         root_cause = as_str(d.get("root_cause")) or (top_hyp.root_cause if top_hyp else "Undetermined")
+        fault_type = canonicalize_fault_type(
+            fault_type,
+            element=self.ctx.sim.topology.get(faulty) if faulty else None,
+            alarms=incident.alarms,
+            root_cause=root_cause,
+        )
         total = sum(scores.values()) or 1.0
         confidence = as_float(d.get("confidence"), round(scores.get(faulty, 0.0) / total, 2)) if faulty else 0.0
 
@@ -229,3 +280,66 @@ class ConsensusModule(BaseAgent):
             explanation=as_str(d.get("explanation")),
         )
         return result, run.trace, run.usage or UsageStats()
+
+
+def _normalize_hypothesis(hypothesis: Hypothesis, incident: Incident, topology) -> Hypothesis:
+    element = topology.get(hypothesis.faulty_element_id) if hypothesis.faulty_element_id else None
+    canonical = canonicalize_fault_type(
+        hypothesis.fault_type,
+        element=element,
+        alarms=incident.alarms,
+        root_cause=hypothesis.root_cause,
+    )
+    if canonical == hypothesis.fault_type:
+        return hypothesis
+    return hypothesis.model_copy(update={"fault_type": canonical})
+
+
+def _missing_ontology_candidates(
+    hypotheses: list[Hypothesis],
+    incident: Incident,
+    topology,
+) -> list[Hypothesis]:
+    existing = {(item.faulty_element_id, item.fault_type) for item in hypotheses}
+    candidates = []
+    for element_id, family, alarm in earliest_specific_root_candidates(incident, topology):
+        if (element_id, family) in existing:
+            continue
+        candidates.append(Hypothesis(
+            proposed_by=f"evidence_verifier:{element_id}",
+            faulty_element_id=element_id,
+            fault_type=family,
+            root_cause=FAULT_EXPLANATIONS[family],
+            confidence=0.8,
+            rationale=(
+                "High-specificity root condition appeared at the first event timestamp; "
+                "generic propagated symptom alarms are excluded from this rule."
+            ),
+            evidence=[
+                f"{alarm.raised_at.isoformat() if alarm.raised_at else 'unknown-time'} "
+                f"{alarm.element_id} {alarm.name}: {alarm.probable_cause}"
+            ],
+        ))
+    return candidates
+
+
+def _causal_support(hypothesis: Hypothesis, incident: Incident, topology) -> float:
+    if not hypothesis.faulty_element_id:
+        return -1.0
+    element = topology.get(hypothesis.faulty_element_id)
+    if element is None:
+        return -1.0
+    score = 0.0
+    compatible = domain_compatible(hypothesis.fault_type, element)
+    if compatible is False:
+        score -= 1.0
+    direct = direct_root_condition_families(element, incident.alarms)
+    if hypothesis.fault_type in direct:
+        score += 0.6
+    earliest = {
+        (element_id, family)
+        for element_id, family, _alarm in earliest_specific_root_candidates(incident, topology)
+    }
+    if (hypothesis.faulty_element_id, hypothesis.fault_type) in earliest:
+        score += 0.4
+    return min(1.0, max(-1.0, score))

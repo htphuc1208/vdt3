@@ -1,4 +1,4 @@
-"""Generate benchmark charts (multi-agent vs single-agent) for the report."""
+"""Generate benchmark charts for paired multi-agent vs single-agent runs."""
 from __future__ import annotations
 
 import os
@@ -9,7 +9,7 @@ matplotlib.use("Agg")  # headless
 import matplotlib.pyplot as plt  # noqa: E402
 
 _LABELS = {
-    "multi_agent": "Multi-Agent (TelcoMAS)", "full": "Multi-Agent (full)", "multi": "Multi-Agent",
+    "multi_agent": "Multi-Agent", "full": "Multi-Agent (full)", "multi": "Multi-Agent",
     "single_agent": "Single-Agent baseline", "single": "Single-Agent",
     "no_rag": "− RAG", "no_consensus": "− consensus", "no_arbiter": "− arbiter",
     "no_partition": "− partition", "no_debate": "− debate",

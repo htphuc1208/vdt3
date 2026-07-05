@@ -1,6 +1,6 @@
 """Domain-expert diagnosis agents.
 
-A *team* of specialists (RAN, Transport & Infrastructure, Core) each investigates the
+A *team* of specialists (RAN, Transport, Power, Core) each investigates the
 incident from its own perspective and returns a ranked root-cause hypothesis with a
 confidence and supporting evidence. Their hypotheses are later fused by the consensus module.
 """
@@ -8,15 +8,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ..knowledge.fault_ontology import CANONICAL_FAULT_TYPES
 from ..schemas import Hypothesis, Incident, TriageResult, UsageStats
 from .base import BaseAgent, as_float, as_list, as_str, incident_brief
 
-FAULT_TYPES = [
-    "FIBER_CUT", "FIBER_DEGRADATION", "CELL_OUTAGE", "CONGESTION", "MISCONFIG",
-    "HARDWARE_FAILURE", "POWER_OUTAGE", "POWER_BROWNOUT", "GPS_SYNC_LOSS",
-    "CORE_OVERLOAD", "UPF_DEGRADATION", "DNS_FAILURE", "LICENSE_EXHAUSTION",
-    "INTERFERENCE", "OTHER",
-]
+FAULT_TYPES = [*CANONICAL_FAULT_TYPES, "OTHER"]
 
 
 @dataclass(frozen=True)
@@ -30,20 +26,27 @@ EXPERTS: list[ExpertProfile] = [
     ExpertProfile(
         key="ran_expert", title="RAN (Radio Access) expert",
         scope="cells, gNodeBs and radio KPIs: cell/RRU outages, radio congestion (PRB), uplink "
-        "interference/BLER, and connected-user license exhaustion. Note that radio symptoms can be "
+        "interference/BLER, connected-user license exhaustion, and GNSS/PTP synchronization loss "
+        "or holdover drift on TDD gNodeBs. Note that radio symptoms can be "
         "caused upstream (transport/power) — follow the dependency chain before blaming the radio.",
     ),
     ExpertProfile(
         key="transport_expert", title="Transport & Infrastructure expert",
-        scope="routers, backhaul fiber links, aggregation switches AND site power/rectifiers: fiber "
-        "cuts / loss-of-signal, line-card hardware faults / packet loss, and site power failures "
-        "(mains loss, battery). A single transport or power fault often explains a whole branch of "
-        "downstream RAN alarms.",
+        scope="routers, backhaul fiber links, aggregation switches: fiber cuts / loss-of-signal, "
+        "fiber degradation, line-card hardware faults, CRC errors, packet loss and latency. "
+        "A single transport fault often explains a whole branch of downstream RAN alarms.",
+    ),
+    ExpertProfile(
+        key="power_expert", title="Power & Site Infrastructure expert",
+        scope="site rectifiers, mains feeds, batteries, voltage quality, brownouts, watchdog resets, "
+        "and shared-site power symptoms. A power fault can masquerade as transport or radio flapping "
+        "when several co-sited elements restart together.",
     ),
     ExpertProfile(
         key="core_expert", title="Core Network expert",
         scope="AMF/SMF/UPF/DNS: registration failures after a bad config change, compute overload "
-        "(CPU exhaustion), and DNS failures that break PDU session setup while radio looks healthy.",
+        "(CPU exhaustion), UPF user-plane packet-processing degradation, and DNS failures that "
+        "break PDU session setup while radio looks healthy.",
     ),
 ]
 
@@ -64,6 +67,8 @@ Method:
 
 Then give your single best root-cause hypothesis. If the true cause looks OUTSIDE your area, still
 report your best guess but set a LOW confidence and say so in the rationale.
+Use a canonical ROOT-FAULT family for `fault_type`; do not copy an alarm-condition name when that
+condition is evidence for a deeper family.
 
 Respond with ONLY a JSON object:
 {{"faulty_element_id": "the ONE element that is the root cause",

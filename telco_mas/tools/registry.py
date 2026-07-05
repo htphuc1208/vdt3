@@ -81,8 +81,9 @@ TOOLS: dict[str, ToolDef] = {
     ),
     "query_kpis": ToolDef(
         "query_kpis",
-        "Read KPI/performance counters. With element_id, returns all its KPIs. With no element_id, "
-        "returns only anomalous KPIs across the whole network. Optional metric filter.",
+        "Read KPI/performance counters. With element_id, returns detailed KPIs for that element. "
+        "With no element_id, returns only a non-oracular aggregate anomaly summary by domain/site/metric. "
+        "Optional metric filter.",
         {
             "type": "object",
             "properties": {"element_id": _S, "metric": _S},

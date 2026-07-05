@@ -158,6 +158,115 @@ def aggregate_ci(rows: list[dict], metric_keys: list[str], group_key: str = "sys
     return out
 
 
+def _norm_ppf(p: float) -> float:
+    """Inverse standard-normal CDF (Acklam's rational approximation).
+
+    Accurate to ~1e-9 over (0, 1); used for a-priori power/sample-size planning,
+    not for any inferential test (those stay exact).
+    """
+    if not 0.0 < p < 1.0:
+        raise ValueError("p must be in (0, 1)")
+    a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02,
+         1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00]
+    b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02,
+         6.680131188771972e+01, -1.328068155288572e+01]
+    c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00,
+         -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00]
+    d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00,
+         3.754408661907416e+00]
+    plow, phigh = 0.02425, 1 - 0.02425
+    if p < plow:
+        q = math.sqrt(-2 * math.log(p))
+        return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+    if p > phigh:
+        q = math.sqrt(-2 * math.log(1 - p))
+        return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+    q = p - 0.5
+    r = q * q
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1)
+
+
+def mcnemar_required_pairs(
+    delta: float,
+    discordant_rate: float,
+    *,
+    alpha: float = 0.05,
+    power: float = 0.80,
+) -> dict:
+    """Paired-binary (McNemar) sample size via Connor's (1987) normal approximation.
+
+    ``delta`` is the marginal accuracy difference to detect (|p01 - p10|); the
+    discordant proportion ``discordant_rate`` (= p01 + p10) is the nuisance
+    parameter that dominates required n. Returns the number of *paired cases*.
+    """
+    delta = abs(float(delta))
+    pd = float(discordant_rate)
+    if delta <= 0.0 or pd <= 0.0 or pd < delta:
+        return {"required_pairs": None, "reason": "require 0 < delta <= discordant_rate"}
+    z_a = _norm_ppf(1 - alpha / 2.0)
+    z_b = _norm_ppf(power)
+    n = (z_a * math.sqrt(pd) + z_b * math.sqrt(pd - delta * delta)) ** 2 / (delta * delta)
+    return {
+        "required_pairs": int(math.ceil(n)),
+        "delta": round(delta, 4),
+        "discordant_rate": round(pd, 4),
+        "alpha": alpha,
+        "power": power,
+        "method": "connor_1987_normal_approx",
+    }
+
+
+def _exact_mcnemar_reject(discordant: int, treatment_wins: int, alpha: float) -> bool:
+    """Whether the two-sided exact McNemar test rejects at ``alpha`` for this split."""
+    if discordant == 0:
+        return False
+    lo = min(treatment_wins, discordant - treatment_wins)
+    tail = sum(math.comb(discordant, i) for i in range(0, lo + 1))
+    p_value = min(1.0, 2.0 * tail * (0.5 ** discordant))
+    return p_value <= alpha
+
+
+def mcnemar_exact_power(
+    n_pairs: int,
+    p01: float,
+    p10: float,
+    *,
+    alpha: float = 0.05,
+) -> dict:
+    """Exact power of the two-sided exact McNemar test.
+
+    ``p01`` = P(treatment correct, baseline wrong), ``p10`` = P(baseline correct,
+    treatment wrong). Enumerates the discordant count d ~ Binom(n, p01+p10) and,
+    conditional on d, the treatment-win count ~ Binom(d, p01/(p01+p10)); sums the
+    exact-test rejection mass. Matches the exact test actually used to report results.
+    """
+    pd = float(p01) + float(p10)
+    if not 0.0 <= pd <= 1.0 or p01 < 0 or p10 < 0:
+        return {"power": None, "reason": "invalid probabilities"}
+    if pd == 0.0:
+        return {"power": 0.0, "n_pairs": n_pairs, "p01": p01, "p10": p10, "alpha": alpha}
+    p_t = float(p01) / pd
+    power = 0.0
+    for d in range(0, n_pairs + 1):
+        p_d = math.comb(n_pairs, d) * (pd ** d) * ((1.0 - pd) ** (n_pairs - d))
+        if p_d == 0.0:
+            continue
+        reject_mass = 0.0
+        for b in range(0, d + 1):
+            if _exact_mcnemar_reject(d, b, alpha):
+                reject_mass += math.comb(d, b) * (p_t ** b) * ((1.0 - p_t) ** (d - b))
+        power += p_d * reject_mass
+    return {
+        "power": round(power, 4),
+        "n_pairs": n_pairs,
+        "p01": round(float(p01), 4),
+        "p10": round(float(p10), 4),
+        "discordant_rate": round(pd, 4),
+        "alpha": alpha,
+        "method": "exact_two_sided_mcnemar",
+    }
+
+
 def _majority(values: list[bool]) -> bool:
     return sum(1 for value in values if value) >= (len(values) / 2.0)
 

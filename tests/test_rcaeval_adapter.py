@@ -27,6 +27,9 @@ def test_rcaeval_inference_payload_does_not_leak_labels():
         assert "ground_truth_root" not in payload
         assert "fault_type" not in payload
         assert "label_extras" not in payload
+        assert case.ground_truth_root not in payload["case_id"]
+        assert case.fault_type not in payload["case_id"]
+        assert case.fault_type not in payload["tags"]
 
 
 def test_rcaeval_fixture_metric_case_scores(tmp_path):

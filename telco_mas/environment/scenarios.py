@@ -7,6 +7,7 @@ evaluation harness, never shown to the agents.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import timedelta
 
 from ..schemas import Alarm, Domain, Incident, Severity
 from .simulator import FAULT_LIBRARY, NetworkSimulator
@@ -330,8 +331,47 @@ def make_simulator(scenario: Scenario) -> NetworkSimulator:
 
 def build_incident(scenario: Scenario, sim: NetworkSimulator) -> Incident:
     alarms = sim.get_alarms()
-    if "missing_noisy_telemetry" in scenario.stress_tags and len(alarms) > 1:
-        alarms = [a for a in alarms if a.element_id == scenario.element_id] or alarms[:1]
+    if "missing_noisy_telemetry" in scenario.stress_tags:
+        # Blind-spot stress: suppress the direct root alarm and retain a
+        # deterministic subset of propagated symptoms. Keeping only the root
+        # alarm would make "missing telemetry" easier and leak localization.
+        propagated = [alarm for alarm in alarms if alarm.element_id != scenario.element_id]
+        if propagated:
+            alarms = propagated[::2]
+        else:
+            root = sim.topology.get(scenario.element_id)
+            indirect = sim.topology.descendants(scenario.element_id)
+            if root and root.parent_id:
+                parent = sim.topology.get(root.parent_id)
+                if parent:
+                    indirect.append(parent)
+            if root:
+                indirect.extend(
+                    element
+                    for element in sim.topology.at_site(root.site)
+                    if element.id != root.id
+                )
+            indirect.extend(
+                element
+                for element in sim.topology.by_domain(Domain.RAN)
+                if element.id != scenario.element_id
+            )
+            symptom_element = next(
+                (element for element in indirect if element.id != scenario.element_id),
+                None,
+            )
+            if symptom_element:
+                alarms = [Alarm(
+                    element_id=symptom_element.id,
+                    severity=Severity.MAJOR,
+                    name="SERVICE_DEGRADATION",
+                    probable_cause=(
+                        "Indirect service-impact symptom; direct producer telemetry is unavailable"
+                    ),
+                    raised_at=sim.event_anchor + timedelta(minutes=3),
+                )]
+            else:
+                alarms = []
     if "distractor_alarms" in scenario.stress_tags:
         alarms = [
             *alarms,
@@ -340,6 +380,7 @@ def build_incident(scenario: Scenario, sim: NetworkSimulator) -> Incident:
                 severity=Severity.MINOR,
                 name="TRANSIENT_SESSION_RETRY",
                 probable_cause="Background retry storm unrelated to the primary incident",
+                raised_at=sim.event_anchor + timedelta(minutes=6),
             ),
         ]
     affected = sorted({a.element_id for a in alarms})

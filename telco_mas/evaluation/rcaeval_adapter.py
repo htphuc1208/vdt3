@@ -157,7 +157,7 @@ def _case_from_dir(case_dir: Path) -> ExternalBenchmarkCase:
         instruction=instruction,
         ground_truth_root=root,
         fault_type=fault_type,
-        tags=[dataset.split("-")[0], dataset.split("-")[1], fault_type],
+        tags=dataset.split("-")[:2],
         observability=observability,
         label_extras={"case_path": str(case_dir), "inject_time": inject_time},
     )

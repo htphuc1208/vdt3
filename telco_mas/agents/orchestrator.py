@@ -40,7 +40,8 @@ _RAG_TOOLS = {"search_knowledge_base", "get_historical_incidents"}
 # information sources instead of persona clones of the same model on the same data.
 EXPERT_SCOPES: dict[str, frozenset[str]] = {
     "ran_expert": frozenset({"RAN"}),
-    "transport_expert": frozenset({"TRANSPORT", "POWER"}),
+    "transport_expert": frozenset({"TRANSPORT"}),
+    "power_expert": frozenset({"POWER"}),
     "core_expert": frozenset({"CORE"}),
 }
 
@@ -53,6 +54,10 @@ class PipelineConfig:
       (information diversity by construction); off = all experts see everything.
     * ``use_debate``    — one cross-examination round when experts disagree on
       the root-cause element, before the vote.
+    * ``use_evidence_verifier`` — enforce fault/domain consistency and seed
+      candidates only from high-specificity first-event root conditions.
+    * ``use_repair`` — after a no-effect remediation, replan once using the
+      validation failure rather than silently accepting an unresolved root.
     """
 
     use_rag: bool = True
@@ -60,6 +65,8 @@ class PipelineConfig:
     use_arbiter: bool = True
     use_partition: bool = True
     use_debate: bool = True
+    use_evidence_verifier: bool = True
+    use_repair: bool = True
 
 
 FULL = PipelineConfig()
@@ -165,7 +172,9 @@ class MultiAgentOrchestrator:
             note("Consensus module fusing expert hypotheses (verifiable-evidence vote)…")
             consensus, trace, u = ConsensusModule(self.llm, self.ctx).run(
                 incident, result.hypotheses,
-                expert_traces=expert_traces, use_arbiter=config.use_arbiter,
+                expert_traces=expert_traces,
+                use_arbiter=config.use_arbiter,
+                use_evidence_verifier=config.use_evidence_verifier,
             )
             result.trace += trace
             usage = usage.add(u)
@@ -189,6 +198,36 @@ class MultiAgentOrchestrator:
         result.validation = validation
         result.trace += trace
         usage = usage.add(u)
+        result.remediation_attempts = 1
+
+        # One bounded repair round. Check the selected root specifically so an
+        # independent secondary fault does not trigger repeated primary fixes.
+        root_still_faulty = bool(
+            consensus.faulty_element_id
+            and self.ctx.sim.has_fault_on(consensus.faulty_element_id)
+        )
+        if config.use_repair and root_still_faulty:
+            note("Remediation had no effect on the selected root — replanning once…")
+            failure = (
+                f"action={action!r}, target={target!r}, "
+                f"validation_notes={validation.notes or 'no recovery evidence'}"
+            )
+            plan, action, target, trace, u = RemediationAgent(self.llm, self.ctx).run(
+                incident,
+                consensus,
+                previous_failure=failure,
+            )
+            result.remediation = plan
+            result.remediation_action = action
+            result.remediation_target_element_id = target
+            result.trace += trace
+            usage = usage.add(u)
+
+            validation, trace, u = ValidationAgent(self.llm, self.ctx).run(plan, action, target)
+            result.validation = validation
+            result.trace += trace
+            usage = usage.add(u)
+            result.remediation_attempts = 2
 
         result.usage = usage
         result.latency_s = round(time.time() - started, 2)

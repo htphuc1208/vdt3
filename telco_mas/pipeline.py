@@ -22,6 +22,8 @@ MULTI_CONFIGS: dict[str, PipelineConfig] = {
     "no_arbiter": PipelineConfig(use_arbiter=False),
     "no_partition": PipelineConfig(use_partition=False),
     "no_debate": PipelineConfig(use_debate=False),
+    "no_verifier": PipelineConfig(use_evidence_verifier=False),
+    "no_repair": PipelineConfig(use_repair=False),
 }
 
 
@@ -46,7 +48,7 @@ def prepare(
     # telco_v3 always includes the distractor corpus: its new fault families have
     # only ADJACENT SOPs there (no exact answer key), so retrieval is non-trivial
     # by construction.
-    include_distractors = kb_distractors or scenario.suite == "telco_v3"
+    include_distractors = kb_distractors or scenario.suite in {"telco_v3", "telco_v4"}
     retriever = build_retriever(
         include_distractors=include_distractors,
         exclude_sop_ids=exclude_sops,

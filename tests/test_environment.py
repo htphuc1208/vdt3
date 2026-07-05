@@ -42,3 +42,16 @@ def test_fiber_cut_blast_radius():
     affected = {a.element_id for a in sim.get_alarms()}
     assert "FIBER-LINK-01" in affected
     assert any(e.startswith("RAN-CELL") for e in affected)
+
+
+def test_element_id_cannot_supply_the_remediation_fix_family():
+    scenario = next(s for s in SCENARIOS if s.id == "fiber_cut")
+    sim = make_simulator(scenario)
+
+    result = sim.apply_remediation(
+        "Optimize configurations on FIBER-LINK-01",
+        element_id="FIBER-LINK-01",
+    )
+
+    assert result["status"] == "no_effect"
+    assert sim.has_fault_on("FIBER-LINK-01")

@@ -8,6 +8,7 @@ from typing import Any, Iterable
 from zoneinfo import ZoneInfo
 
 from .dataset import OpenRCADataset
+from .prepared import PreparedOpenRCA
 
 TELECOM_REASONS = ["CPU fault", "network delay", "network loss", "db connection limit", "db close"]
 TELECOM_COMPONENTS = [
@@ -16,6 +17,31 @@ TELECOM_COMPONENTS = [
     *[f"db_{index:03d}" for index in range(1, 14)],
 ]
 UTC_PLUS_8 = ZoneInfo("Asia/Shanghai")
+
+
+def candidate_catalog_for_row(prepared: PreparedOpenRCA, row_id: int) -> dict[str, Any]:
+    """Build a label-safe OpenRCA candidate catalog from prepared runtime telemetry."""
+
+    components = prepared.runtime_components(row_id)
+    source = "prepared_runtime_telemetry"
+    fallback_used = False
+    if not components:
+        # Empty fixture rows and some partial smoke caches have no observable
+        # runtime components. This is a protocol prior fallback, never a label
+        # lookup; confirmatory rows should normally use prepared telemetry.
+        components = list(TELECOM_COMPONENTS)
+        source = "protocol_prior_no_runtime_components"
+        fallback_used = True
+    return {
+        "components": sorted(dict.fromkeys(components)),
+        "reasons": list(TELECOM_REASONS),
+        "source": {
+            "components": source,
+            "reasons": "protocol_prior_openrca_reason_catalog",
+            "label_derived": False,
+            "fallback_used": fallback_used,
+        },
+    }
 
 
 class OpenRCATelemetryTools:
@@ -205,4 +231,3 @@ def _to_float(value: str | None) -> float | None:
         return float(value) if value is not None else None
     except ValueError:
         return None
-

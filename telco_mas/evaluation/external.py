@@ -1,6 +1,7 @@
 """Common abstractions for external RCA benchmark suites."""
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -18,10 +19,16 @@ class ExternalBenchmarkCase:
     observability: dict[str, Any] = field(default_factory=dict)
     label_extras: dict[str, Any] = field(default_factory=dict)
 
+    def runtime_case_id(self) -> str:
+        """Stable opaque ID safe to expose during inference."""
+
+        digest = hashlib.sha256(self.case_id.encode("utf-8")).hexdigest()[:12]
+        return f"{self.source}-{digest}"
+
     def inference_payload(self) -> dict[str, Any]:
         """Payload safe to pass to a model. No ground-truth labels included."""
         return {
-            "case_id": self.case_id,
+            "case_id": self.runtime_case_id(),
             "source": self.source,
             "instruction": self.instruction,
             "tags": list(self.tags),

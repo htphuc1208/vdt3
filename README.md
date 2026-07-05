@@ -1,189 +1,112 @@
-# TelcoMAS — A Multi-Agent System for Telecom Network Incident Handling
+# ShardRCA / Telco RCA Research Artifact
 
-TelcoMAS is a prototype **multi-agent system** that detects, localises, explains and
-remediates incidents in a mobile (5G) network. Instead of one monolithic AI agent, a
-**team of specialised LLM agents** collaborates over a simulated network — triaging the
-alarm storm, correlating it with operational knowledge, diagnosing the root cause from
-several expert viewpoints, fusing those views by a **consensus vote**, and finally applying
-and validating a fix.
+This repository now focuses on **ShardRCA**, an evidence-isolated multi-agent
+root-cause analysis pipeline evaluated with preregistered, label-safe benchmark
+protocols.
 
-> Built for the VDT2026 (DSAI) program. Every agent reasons with a live LLM through an
-> **OpenAI-compatible API**, so it runs on **OpenAI** (`gpt-*`) or **DeepSeek** (`deepseek-chat`)
-> with a one-line config change.
+The Python package is still named `telco_mas` for import compatibility, but the
+current research path is ShardRCA + RCAEval/OpenRCA/TelecomTS evidence, not the
+legacy simulator demo.
 
-![Architecture](report/figures/architecture.png)
+## Current Evidence Status
 
-## Why multi-agent?
+The strongest current result is on RCAEval-Hard:
 
-Real incident handling is a pipeline of specialised steps — detection, root-cause analysis,
-data correlation, remediation and verification — and a single alarm storm usually has **one**
-upstream root cause hidden behind many downstream symptoms. TelcoMAS mirrors that pipeline
-with cooperating agents and includes benchmarks for comparing decomposition + consensus
-against a single-agent baseline under controlled RCA conditions.
+| Evidence | ShardRCA | Baseline | Result |
+|---|---:|---:|---|
+| v7 holdout Hit@1 | 0.60 | 0.20 `single_react_sc` | +0.40, exact paired p=0.007812 |
+| fresh holdout Hit@1 | 0.667 | 0.375 `single_react_sc` | +0.292, exact paired p=0.039 |
 
-The design synthesises ideas from the reference literature (see the report):
+Allowed claim:
 
-| Idea | Paper | Where in TelcoMAS |
-|------|-------|-------------------|
-| LLM agents for root-cause analysis | Roy et al. 2024 | the diagnosis agents |
-| Tool-assisted, multi-modality observation | TAMO (Zhang et al. 2025) | the telemetry tool layer (alarms/KPIs/logs/topology) |
-| Multi-agent collaboration + consensus | mABC (Zhang et al. 2024) | the weighted-vote + arbiter consensus module |
-| SOP-enhanced multi-agent orchestration | Flow-of-Action (Pei et al. 2025) | the Flow-of-Action orchestrator + SOP knowledge base |
-| Consensus of multi-agent systems | Zhang et al. 2026 | the confidence-weighted voting formula |
+> Evidence-isolated ShardRCA improves root-cause localization over a budgeted
+> single-context ReAct RCA agent on preregistered, label-safe RCAEval-Hard
+> holdouts.
 
-## The agent team
+Required caveat:
 
-1. **Detection / Triage** — assess severity and the suspected domain from the alarms.
-2. **Correlation** — RAG over SOP playbooks and historical incidents.
-3. **Diagnosis experts** — RAN, Transport & Infrastructure, and Core specialists each propose a
-   ranked root-cause hypothesis (element + fault type + confidence + evidence).
-4. **Consensus** — a verifiable-evidence vote over the experts, resolved by an LLM arbiter.
-5. **Remediation** — turn the confirmed cause into a concrete, SOP-based plan.
-6. **Validation** — apply the fix (simulated) and verify KPIs/alarms recover.
+> This does not prove that multi-agent RCA beats every possible single-agent
+> system. Against the global-board oracle `same_board_single`, ShardRCA ties on
+> the fresh holdout.
 
-A **single-agent baseline** (one agent, all tools, no team, no consensus) is included for
-comparison in the benchmark. The baseline is deliberately strong: unrestricted tools and a
-larger tool budget, so any multi-agent advantage must come from information partitioning,
-cross-examination, and consensus rather than a weakened control.
+OpenRCA Telecom is currently **diagnostic/supporting evidence only**. ShardRCA is
+numerically first in the reviewed run, but the confirmatory gate is underpowered
+and not claim-ready.
+
+Primary evidence files:
+
+- `results/positive_result_claim_package.md`
+- `results/rcaeval_hard_llm_fresh_confirm24.json`
+- `results/prereg_rcaeval_fresh_confirm24_frozen.json`
+- `results/openrca_paired_frozen.json`
+- `results/openrca_paired_frozen_analysis.json`
+- `results/benchmark_readiness.json`
+- `results/claim_audit_after_repair.json`
 
 ## Install
 
-Requires Python 3.10+ (developed on 3.13).
-
 ```bash
-# option 1: into your current environment
-make install            # == pip install -r requirements.txt
+make install
 
-# option 2: a dedicated virtualenv
-make venv && source .venv/bin/activate
+# Heavier public benchmark dependencies:
+make install-research
 ```
 
-### Configure the LLM
-
-Copy `.env.example` to `.env` and set your key:
+Set an OpenAI-compatible endpoint when running live LLM benchmarks:
 
 ```bash
-# OpenAI
-OPENAI_API_KEY=sk-...
+OPENAI_API_KEY=...
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4o-mini
-
-# …or DeepSeek (OpenAI-compatible)
-# OPENAI_API_KEY=sk-...
-# OPENAI_BASE_URL=https://api.deepseek.com
-# OPENAI_MODEL=deepseek-chat
 ```
 
-## Usage
+## Useful Commands
 
 ```bash
-make list                       # list incident scenarios
-make demo SCENARIO=fiber_cut    # run one scenario end-to-end (with agent trace)
-make demo SCENARIO=dns_failure
-
-# the single-agent baseline instead of the team:
-python -m apps.cli --scenario congestion --mode single --trace
-
-# interactive dashboard (recommended for a live demo):
-make dashboard                  # http://localhost:8501
-
-# benchmark the team vs the baseline over all scenarios (writes charts + JSON):
-make bench
-```
-
-Scenarios cover RAN, Transport, Core and Power faults: `fiber_cut`, `cell_outage`,
-`congestion`, `amf_misconfig`, `linecard_fault`, `site_power`, `amf_overload`, `dns_failure`,
-`license`, `interference`.
-
-## Run with Docker (one command)
-
-```bash
-make docker-build
-make docker-run                 # serves the dashboard on http://localhost:8501
-```
-
-## Testing
-
-The whole environment/tooling/pipeline core is unit-tested **without an API key** (a stubbed
-LLM drives the agent loop):
-
-```bash
+# Run tests
 make test
+
+# RCAEval profile/smoke benchmark; override BENCH_ARGS for other suites.
+make bench
+
+# Fresh RCAEval confirmatory run
+make bench-rcaeval-fresh
+
+# OpenRCA preparation and benchmark flow
+scripts/download_openrca_telecom.sh --extract
+make prepare-openrca
+make prereg-openrca
+make bench-openrca-full
+
+# Rebuild readiness and claim audit reports
+make readiness
+make claim-audit
 ```
 
-## Research / paper-grade evaluation
+## Report Direction
 
-The research-track artifact adds public benchmark adapters and stronger scientific reporting:
+Write the report as a research artifact with three pillars:
 
-```bash
-# install heavier experiment dependencies
-make install-research
+1. Evidence-isolated multi-agent RCA architecture.
+2. Preregistered, label-safe benchmark protocol with claim auditing.
+3. Replicated RCAEval-Hard win over budgeted single-context ReAct, plus clear
+   boundaries on oracle-like single agents and real-telecom evidence.
 
-# validate and run a label-safe RCAEval smoke/profile benchmark
-make bench ARGS="--suite rcaeval --sample 30 --systems full,single,no_consensus --out results/rcaeval_sample30.json"
+Avoid phrasing the current result as a real-telecom SOTA win. The next full-claim
+target is a clean TN-RCA530/OpenRCA/TeleLogsAgent confirmatory benchmark with
+non-contaminated rows.
 
-# staged OpenRCA integration; skips gracefully until OPENRCA_DATA_DIR/data/openrca is populated
-make bench-openrca ARGS="--limit 3 --out results/openrca_smoke.json"
+## Repository Map
 
-# ablation: isolate the contribution of RAG / consensus / arbiter (real switches, not aliases)
-make bench ARGS="--systems full,single,no_rag,no_consensus,no_arbiter --runs 3 --no-cache"
-# writes results/ablation_telco_v1_runs3.json unless --out is supplied
-
-# construct-validity control: hold out the exactly-matching SOP + add distractor SOPs
-make bench ARGS="--systems full,single --holdout-sop --kb-distractors --no-cache"
-# writes results/construct_holdout_distractors_telco_v1.json unless --out is supplied
-
-# larger synthetic stress suite (60 cases, balanced across 10 fault families)
-make bench ARGS="--suite telco_v2 --systems full,single,no_rag,no_consensus,no_arbiter --runs 3 --no-cache"
-
-# hard-regime hypothesis test: large topology, cross-domain masquerades, partition/debate ablations
-make bench ARGS="--suite telco_v3 --systems full,single,no_rag,no_consensus,no_arbiter,no_partition,no_debate --runs 3 --no-cache --out results/telco_v3_ablation_runs3.json"
-
-# live label-safe RCAEval LLM baseline; profile mode remains only a smoke test
-make bench ARGS="--suite rcaeval --external-mode llm --sample 30 --systems full,single --no-cache"
+```text
+telco_mas/shardrca/        ShardRCA miners, board, fusion, falsifier, reranking
+telco_mas/evaluation/      RCAEval runners, statistics, readiness, claim audit
+telco_mas/openrca/         OpenRCA adapters, preparation, runner, analysis
+telco_mas/telecomts/       TelecomTS adapter and diagnostics
+telco_mas/telelogs_agent/  TeleLogsAgent adapter/tool-mode scaffolding
+results/                  Local benchmark artifacts and preregistrations
+scripts/                  Dataset download helpers
 ```
 
-The headline diagnosis metric is now **strict**: correct element + semantic fault-family
-match + causal explanation. The loose root-cause keyword metric is retained only as a
-secondary diagnostic signal. The benchmark also reports remediation target/action/SOP
-correctness, simulator-grounded resolution, Wilson confidence intervals, exact paired
-McNemar tests, scenario-level paired bootstrap effects, and solved-cases-per-10k-tokens.
-`telco_v1` is a ceiling-effect feasibility control, `telco_v2` broadens synthetic coverage,
-and `telco_v3` is the only suite intended to test the conditional claim that multi-agent
-RCA can beat a strong single-agent baseline in hard, information-partitioned RCA cases.
-`--cache-only` replays cached completions offline (no live spend).
-
-Data layout:
-
-* `data/rcaeval` is a symlink to `/home/phucht/project/vdt2/data/rcaeval` and should contain 735 cases (RE1=375, RE2=270, RE3=90).
-* `data/openrca` is a placeholder. Put OpenRCA data there or set `OPENRCA_DATA_DIR` to a directory containing `Telecom/query.csv` and `Telecom/telemetry`.
-* Public-data adapters expose label-safe runtime payloads; scoring labels such as RCAEval roots and OpenRCA `scoring_points` are used only by evaluators.
-* RCAEval `profile` mode is an ingestion/scoring smoke test and must not be reported as multi-agent evidence; use `--external-mode llm` for live label-safe LLM predictions.
-
-The research manuscript is `report/report.md`; the original VDT-style report is preserved as
-`report/report_vdt2026.md`.
-
-## Project structure
-
-```
-telco_mas/
-  environment/   synthetic 5G topology, telemetry simulator, fault scenarios (ground truth)
-  knowledge/     SOP playbooks + historical incidents + TF-IDF retriever
-  tools/         OpenAI function-calling tools + registry/dispatch
-  agents/        detection, correlation, diagnosis, consensus, remediation, validation, orchestrator
-  evaluation/    metrics, benchmark runner, charts
-  llm.py         OpenAI-compatible client + tool-calling agent loop (+ cache)
-  pipeline.py    run one incident (multi-agent or baseline)
-  baseline.py    single-agent baseline
-apps/            cli.py (rich CLI) + dashboard.py (Streamlit)
-scripts/         make_architecture.py
-report/          report.md + figures
-tests/           unit + smoke tests
-```
-
-## Notes
-
-* The network is **simulated** (we cannot attach to a live telecom network) but deterministic,
-  so runs are reproducible; all *reasoning* is done live by the LLM agents.
-* The benchmark enables an on-disk LLM cache by default so re-runs are cheap and the reported
-  numbers are stable (`LLM_CACHE`, or `--no-cache`). The cache only replays real completions.
+Legacy simulator modules may still exist where required by synthetic fallback and
+readiness checks, but they are no longer the advertised product/demo surface.

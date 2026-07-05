@@ -1,12 +1,11 @@
-# TelcoMAS — Multi-Agent System for Telecom Network Incident Handling
-# Python 3.10+ (developed on 3.13)
+# ShardRCA / OpenRCA research artifact runtime.
+# Python 3.10+.
 
-openai>=1.40,<3            # OpenAI-compatible Chat Completions + tool calling (works with DeepSeek too)
-pydantic>=2.6             # typed data models
-python-dotenv>=1.0        # load .env
-rich>=13.0               # pretty CLI output
-streamlit>=1.30          # interactive dashboard
-matplotlib>=3.7          # benchmark charts
+openai>=1.40,<3
+pydantic>=2.6
+python-dotenv>=1.0
+rich>=13.0
+matplotlib>=3.7
 
-# testing (optional)
+# testing
 pytest>=7.0

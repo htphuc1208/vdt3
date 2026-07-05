@@ -25,6 +25,18 @@ def test_telemetry_tools():
     assert isinstance(kpis, list)
 
 
+def test_global_kpi_scan_is_aggregate_not_element_oracle():
+    ctx = _ctx("v3_fiber_degradation_a")
+    payload = json.loads(dispatch(ctx, "query_kpis", {}))
+    blob = json.dumps(payload)
+
+    assert payload["scope"] == "global_anomaly_summary"
+    assert payload["anomaly_count"] > 0
+    assert "by_domain" in payload
+    assert "FIBER-LINK-01" not in blob
+    assert "value" not in blob
+
+
 def test_kb_tool_retrieves_correct_sop():
     ctx = _ctx()
     hits = json.loads(dispatch(ctx, "search_knowledge_base", {"query": "fiber optical loss of signal link down"}))

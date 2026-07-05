@@ -1,9 +1,10 @@
 # Heavy dependencies for paper-grade external benchmarks.
-# Keep requirements.txt small for the demo/runtime path.
+# Keep requirements.txt small for the core runtime/test path.
 
 -r requirements.txt
 
 pandas>=2.0
+pyarrow>=14.0
 numpy>=1.26
 scipy>=1.10
 scikit-learn>=1.3

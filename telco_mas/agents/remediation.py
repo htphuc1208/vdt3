@@ -1,6 +1,7 @@
 """Remediation agent: turn the confirmed root cause into a concrete SOP-based plan."""
 from __future__ import annotations
 
+from ..knowledge.fault_ontology import REMEDIATION_FAMILY_HINTS
 from ..schemas import ConsensusResult, Incident, RemediationPlan, UsageStats
 from .base import BaseAgent, as_list, as_str, incident_brief
 
@@ -11,6 +12,8 @@ Use `search_knowledge_base` to fetch the matching SOP, then adapt it to this inc
 field must be a single imperative sentence that names the fix and the target element, so it can be
 executed (e.g. "Dispatch a field team to splice and repair FIBER-LINK-01", "Replace the faulty line
 card on TRANSPORT-RTR-02", "Roll back the config change on CORE-AMF-01").
+Do not remediate a downstream symptom family when the confirmed root family is more specific.
+The fix-family hint is a constraint, not an exact hidden SOP; use the knowledge base for details.
 
 Respond with ONLY a JSON object:
 {"sop_id": "SOP-...",
@@ -25,11 +28,25 @@ class RemediationAgent(BaseAgent):
     name = "remediation"
     tool_names = ["search_knowledge_base", "get_historical_incidents", "query_topology"]
 
-    def run(self, incident: Incident, consensus: ConsensusResult):
+    def run(
+        self,
+        incident: Incident,
+        consensus: ConsensusResult,
+        *,
+        previous_failure: str | None = None,
+    ):
+        hint = REMEDIATION_FAMILY_HINTS.get(consensus.fault_type or "")
         user = (
             incident_brief(incident)
             + f"\n\nConfirmed root cause: {consensus.root_cause}"
             + f"\nFaulty element: {consensus.faulty_element_id} (type {consensus.fault_type})."
+            + (f"\nRequired fix family: {hint}." if hint else "")
+            + (
+                "\n\nThe previous remediation had NO EFFECT. Do not repeat it. "
+                f"Failure evidence: {previous_failure}"
+                if previous_failure
+                else ""
+            )
         )
         run = self.invoke(SYSTEM, user)
         d = run.data

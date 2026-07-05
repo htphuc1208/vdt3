@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from ..schemas import Alarm, Domain, KPISample, LogEntry, NetworkElement, Severity
@@ -407,12 +408,24 @@ def _stable_noise(element_id: str, metric: str) -> float:
     return (frac - 0.5) * 2.0  # [-1, 1]
 
 
+def _scope_delay(scope: str) -> int:
+    """Place root evidence before propagated symptoms in the event timeline."""
+    return {
+        "self": 0,
+        "parent": 1,
+        "site": 2,
+        "downstream": 3,
+        "all_ran": 4,
+    }.get(scope, 5)
+
+
 class NetworkSimulator:
     """Holds network state, injects faults, and serves telemetry to the tools."""
 
     def __init__(self, topology: Optional[Topology] = None) -> None:
         self.topology = topology or build_default_topology()
         self.active: list[ActiveFault] = []
+        self.event_anchor = datetime(2026, 1, 15, 2, 0, tzinfo=timezone.utc)
 
     # -- fault lifecycle -----------------------------------------------------
     def inject(self, element_id: str, fault_type: str) -> None:
@@ -471,6 +484,7 @@ class NetworkSimulator:
         return KPISample(
             element_id=element.id, metric=metric, value=value, unit=meta["unit"],
             normal_range=(lo, hi), is_anomalous=anomalous,
+            timestamp=self.event_anchor + timedelta(minutes=5),
         )
 
     def get_kpis(self, element_id: str | None = None, metric: str | None = None) -> list[KPISample]:
@@ -504,7 +518,13 @@ class NetworkSimulator:
                     if key in seen:
                         continue
                     seen.add(key)
-                    alarms.append(Alarm(element_id=eid, severity=sev, name=name, probable_cause=cause))
+                    alarms.append(Alarm(
+                        element_id=eid,
+                        severity=sev,
+                        name=name,
+                        probable_cause=cause,
+                        raised_at=self.event_anchor + timedelta(minutes=_scope_delay(scope)),
+                    ))
         if element_id:
             alarms = [a for a in alarms if a.element_id == element_id]
         if severity:
@@ -519,7 +539,12 @@ class NetworkSimulator:
         for fault in self.active:
             for scope, lvl, template in fault.spec.log_specs:
                 for eid in self._scope_ids(fault, scope):
-                    logs.append(LogEntry(element_id=eid, level=lvl, message=template.format(id=eid)))
+                    logs.append(LogEntry(
+                        element_id=eid,
+                        level=lvl,
+                        message=template.format(id=eid),
+                        timestamp=self.event_anchor + timedelta(minutes=_scope_delay(scope), seconds=30),
+                    ))
         if element_id:
             logs = [l for l in logs if l.element_id == element_id]
         if level:
@@ -551,13 +576,20 @@ class NetworkSimulator:
         Exact SOP phrasing is NOT required.
         """
         action_l = (action or "").lower()
+        # Element IDs often contain fault-family words (e.g. CORE-UPF-01,
+        # FIBER-LINK-01). They prove the target, not the repair mechanism.
+        # Remove every known ID before semantic action matching so naming the
+        # target alone cannot clear a fault.
+        action_family_text = action_l
+        for element in self.topology.all():
+            action_family_text = action_family_text.replace(element.id.lower(), " ")
         for fault in list(self.active):
             faulty = fault.element_id
             spec = fault.spec
             stems = [k.lower() for k in spec.remediation_keywords]
             stems += [s.lower() for s in ACTION_SYNONYMS.get(spec.fault_type, [])]
             stems.append(spec.remediation_sop.lower())
-            matched_stem = next((s for s in stems if s in action_l), None)
+            matched_stem = next((s for s in stems if s in action_family_text), None)
             target_ok = (
                 element_id == faulty
                 or faulty.lower() in action_l

@@ -7,5 +7,7 @@ __pycache__/
 results/*.json
 data/openrca/**
 !data/openrca/.gitkeep
+data/openrca_prepared/**
 data/rcaeval
+data/telecomts/**
 .DS_Store

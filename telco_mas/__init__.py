@@ -1,8 +1,8 @@
-"""TelcoMAS — a Multi-Agent System for telecom network incident handling.
+"""ShardRCA/OpenRCA research artifact.
 
-A team of LLM agents (triage, knowledge/correlation, domain-expert diagnosis,
-consensus, remediation, validation) collaborates over a simulated telecom network
-to detect, localise, explain and remediate incidents.
+The package name remains ``telco_mas`` for compatibility with existing
+experiment artifacts, but the active repository surface is the ShardRCA
+benchmarking and claim-audit workflow.
 """
 
 __version__ = "0.1.0"
