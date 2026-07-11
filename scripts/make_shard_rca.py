@@ -1,8 +1,11 @@
-"""Render ShardRCA architecture flowchart and explanation to report/figures/shard_rca.png.
+"""Render the up-to-date ShardRCA architecture flowchart to report/figures/shard_rca.png.
 
-This script produces a NeurIPS-standard academic diagram illustrating:
-- The ShardRCA evidence-isolated multi-agent RCA pipeline (flowchart).
-- High-level reasoning for why a single agent cannot replicate this behavior.
+The diagram reflects the current autonomous peer-interaction MAS pipeline:
+Task+candidate catalog -> planner/shard builder -> parallel isolated investigator
+agents (each emits a local posterior + evidence pointers on a shared blackboard)
+-> autonomous peer-interaction round (publish -> critique -> revise posterior)
+-> correlation-aware fusion -> causal re-rank / targeted refinement
+-> adversarial falsifier -> final RCA answer.
 """
 from __future__ import annotations
 
@@ -12,172 +15,137 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
-import textwrap
 
-# Set academic serif font style
+# Academic serif style
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["font.serif"] = ["DejaVu Serif", "Times New Roman", "Liberation Serif", "serif"]
 plt.rcParams["text.color"] = "#0f172a"
 
-# Colors
 COLOR_TEXT = "#0f172a"
-COLOR_ARROW = "#475569"
+COLOR_ARROW = "#64748b"
 
-# Soft fills and borders
-FILL_GRAY = "#f1f5f9"
-BORDER_GRAY = "#64748b"
-
-FILL_BLUE = "#eff6ff"
-BORDER_BLUE = "#3b82f6"
-
-FILL_AMBER = "#fffbeb"
-BORDER_AMBER = "#f59e0b"
-
-FILL_PURPLE = "#faf5ff"
-BORDER_PURPLE = "#a855f7"
-
-FILL_ROSE = "#fff1f2"
-BORDER_ROSE = "#f43f5e"
-
-FILL_GREEN = "#f0fdf4"
-BORDER_GREEN = "#10b981"
+FILL_GRAY = "#f8fafc"; BORDER_GRAY = "#94a3b8"
+FILL_BLUE = "#f0f4ff"; BORDER_BLUE = "#5c7cfa"
+FILL_AMBER = "#fff9db"; BORDER_AMBER = "#fcc419"
+FILL_PURPLE = "#f3f0ff"; BORDER_PURPLE = "#845ef7"
+FILL_TEAL = "#e6fcf5"; BORDER_TEAL = "#20c997"
+FILL_AZURE = "#e7f5ff"; BORDER_AZURE = "#339af0"
+FILL_ROSE = "#fff5f5"; BORDER_ROSE = "#ff6b6b"
+FILL_GREEN = "#ebfbee"; BORDER_GREEN = "#51cf66"
 
 
-def _box(ax, x, y, w, h, text, fill_color, border_color, fs=9.5, weight="normal", style="normal"):
-    # Draw rounded rectangle
+def _box(ax, x, y, w, h, text, fill_color, border_color, fs=9.0, weight="normal", style="normal", lw=1.2):
     ax.add_patch(mpatches.FancyBboxPatch(
         (x, y), w, h, boxstyle="round,pad=0,rounding_size=0.03",
-        linewidth=1.2, edgecolor=border_color, facecolor=fill_color
+        linewidth=lw, edgecolor=border_color, facecolor=fill_color,
     ))
-    # Add text
-    ax.text(
-        x + w / 2, y + h / 2, text,
-        ha="center", va="center", fontsize=fs, color=COLOR_TEXT,
-        weight=weight, style=style
-    )
+    ax.text(x + w / 2, y + h / 2, text, ha="center", va="center",
+            fontsize=fs, color=COLOR_TEXT, weight=weight, style=style)
 
 
-def _arrow(ax, x1, y1, x2, y2, label=""):
-    ax.annotate(
-        "", xy=(x2, y2), xytext=(x1, y1),
-        arrowprops=dict(arrowstyle="-|>", color=COLOR_ARROW, lw=1.2, mutation_scale=12, shrinkA=0, shrinkB=0)
-    )
+def _arrow(ax, x1, y1, x2, y2, label="", lw=1.2, color=COLOR_ARROW):
+    ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
+                arrowprops=dict(arrowstyle="-|>", color=color, lw=lw, mutation_scale=12,
+                                shrinkA=0, shrinkB=0))
     if label:
-        if abs(y1 - y2) < 1e-4:  # Horizontal arrow
-            ax.text((x1 + x2) / 2, y1 + 0.05, label, ha="center", va="bottom", fontsize=8.8, color="#475569", weight="bold")
-        else:  # Vertical or diagonal arrow
-            ax.text((x1 + x2) / 2 + 0.1, (y1 + y2) / 2, label, ha="left", va="center", fontsize=8.8, color="#475569")
+        if abs(y1 - y2) < 1e-4:
+            ax.text((x1 + x2) / 2, y1 + 0.08, label, ha="center", va="bottom",
+                    fontsize=8.5, color="#475569", weight="bold")
+        else:
+            ax.text((x1 + x2) / 2 + 0.1, (y1 + y2) / 2, label, ha="left", va="center",
+                    fontsize=8.5, color="#475569")
 
 
 def render_shard_rca() -> None:
-    fig, ax = plt.subplots(figsize=(6.8, 7.5))
-    ax.set_xlim(-0.3, 6.5)
-    ax.set_ylim(0.0, 7.5)
+    fig, ax = plt.subplots(figsize=(8.5, 12.0))
+    ax.set_xlim(-0.5, 8.5)
+    ax.set_ylim(-0.1, 12.1)
     ax.axis("off")
 
-    # Title
-    ax.text(
-        3.1, 7.25, "ShardRCA Architecture: Evidence-Isolated Multi-Agent RCA",
-        ha="center", va="center", fontsize=13, weight="bold", color="#0f172a"
-    )
+    cx = 4.0
+    fw_x, fw_w = 0.2, 7.6  # full-width boxes
 
-    # ==========================================
-    # FLOWCHART
-    # ==========================================
-    
-    # 1. Catalog
-    _box(
-        ax, 1.3, 6.4, 3.6, 0.6,
-        "Task & Telemetry Catalog\n(Target incident & global data feeds)",
-        FILL_GRAY, BORDER_GRAY, fs=9.0
-    )
-    
-    # 2. Planner
-    _box(
-        ax, 1.3, 5.45, 3.6, 0.7,
-        "PLANNER (1 LLM call)\nFormulates domain-specific query shards",
-        FILL_BLUE, BORDER_BLUE, fs=9.2, weight="bold"
-    )
-    _arrow(ax, 3.1, 6.4, 3.1, 6.15)
-    
-    # Label pointing to shard plan
-    _arrow(ax, 4.9, 5.8, 5.5, 5.8, label="shard plan")
-    
-    # 3. Parallel Miners (Dashed background box)
+    ax.text(cx, 11.75, "ShardRCA: Evidence-Isolated Autonomous Multi-Agent RCA",
+            ha="center", va="center", fontsize=13.0, weight="bold", color="#0f172a")
+
+    # 1. Task & candidate catalog
+    _box(ax, fw_x, 10.85, fw_w, 0.80,
+         "Task & Candidate Catalog\nCMDB component × fault reason universe + multi-source telemetry feeds",
+         FILL_GRAY, BORDER_GRAY, fs=8.5)
+
+    # 2. Planner / shard builder
+    _box(ax, fw_x, 9.40, fw_w, 0.95,
+         "PLANNER / SHARD BUILDER\nPartition observability by modality × component groups × active time window",
+         FILL_BLUE, BORDER_BLUE, fs=8.5, weight="bold")
+    _arrow(ax, cx, 10.85, cx, 10.35, label="Telemetry stream")
+
+    # 3. Parallel isolated investigator agents (dashed container)
     ax.add_patch(mpatches.FancyBboxPatch(
-        (0.25, 4.05), 5.7, 1.25, boxstyle="round,pad=0,rounding_size=0.03",
-        linewidth=1.0, edgecolor="#94a3b8", facecolor="#f8fafc", ls="--"
-    ))
-    ax.text(
-        0.35, 5.18, "Parallel Isolated Execution",
-        fontsize=8.0, color="#64748b", weight="bold", style="italic",
-        bbox=dict(facecolor="white", edgecolor="none", pad=1.0)
-    )
-    
-    # Miner boxes
-    _box(
-        ax, 0.4, 4.2, 1.7, 0.8,
-        "Metric Miner\n(pandas tools)\nCPU, RAM, bandwidth",
-        FILL_AMBER, BORDER_AMBER, fs=8.2
-    )
-    _box(
-        ax, 2.25, 4.2, 1.7, 0.8,
-        "Log Miner\n(template/anom)\nSyslog patterns",
-        FILL_AMBER, BORDER_AMBER, fs=8.2
-    )
-    _box(
-        ax, 4.1, 4.2, 1.7, 0.8,
-        "Trace Miner\n(graph/latency)\nRPC dependencies",
-        FILL_AMBER, BORDER_AMBER, fs=8.2
-    )
-    
-    # Split arrows
-    ax.plot([3.1, 3.1], [5.45, 5.2], color=COLOR_ARROW, lw=1.2)
-    ax.plot([1.25, 4.95], [5.2, 5.2], color=COLOR_ARROW, lw=1.2)
-    _arrow(ax, 1.25, 5.2, 1.25, 5.0)
-    _arrow(ax, 3.1, 5.2, 3.1, 5.0)
-    _arrow(ax, 4.95, 5.2, 4.95, 5.0)
-    
-    # 4. Blackboard
-    _box(
-        ax, 1.3, 3.0, 3.6, 0.7,
-        "BLACKBOARD (Structured findings)\nAggregates compact, typed domain evidence",
-        FILL_GRAY, BORDER_GRAY, fs=9.0, weight="bold"
-    )
-    
-    # Merge arrows
-    ax.plot([1.25, 1.25], [4.2, 3.9], color=COLOR_ARROW, lw=1.2)
-    ax.plot([3.1, 3.1], [4.2, 3.9], color=COLOR_ARROW, lw=1.2)
-    ax.plot([4.95, 4.95], [4.2, 3.9], color=COLOR_ARROW, lw=1.2)
-    ax.plot([1.25, 4.95], [3.9, 3.9], color=COLOR_ARROW, lw=1.2)
-    _arrow(ax, 3.1, 3.9, 3.1, 3.7)
-    
-    # 5. Synthesizer
-    _box(
-        ax, 1.3, 2.05, 3.6, 0.7,
-        "SYNTHESIZER (k=3 samples)\nGenerates candidate root-causes\nand tallies majority vote",
-        FILL_PURPLE, BORDER_PURPLE, fs=9.0
-    )
-    _arrow(ax, 3.1, 3.0, 3.1, 2.75)
-    
-    # 6. Falsifier
-    _box(
-        ax, 1.3, 1.1, 3.6, 0.7,
-        "FALSIFIER (LLM disproof)\nExecutes adversarial sanity checks\nto challenge top candidate",
-        FILL_ROSE, BORDER_ROSE, fs=9.0
-    )
-    _arrow(ax, 3.1, 2.05, 3.1, 1.8)
-    
-    # 7. Final RCA
-    _box(
-        ax, 1.3, 0.1, 3.6, 0.75,
-        "Final RCA Answer\n(Root-cause localization & remediation plan)",
-        FILL_GREEN, BORDER_GREEN, fs=9.2, weight="bold"
-    )
-    _arrow(ax, 3.1, 1.1, 3.1, 0.85)
+        (0.2, 7.0), 7.6, 1.9, boxstyle="round,pad=0,rounding_size=0.02",
+        linewidth=1.0, edgecolor="#cbd5e1", facecolor="#f8fafc", ls="--"))
+    ax.text(0.3, 8.7, "Parallel Isolated Execution  (each agent sees ONLY its planned shard)",
+            fontsize=8.0, color="#64748b", weight="bold", style="italic",
+            bbox=dict(facecolor="white", edgecolor="none", pad=1.0))
+
+    # Agents with width 2.2, spanning 0.5 -> 2.7, 2.9 -> 5.1, 5.3 -> 7.5
+    agents = [
+        (0.5, "Metric Agent\n(KPI anomalies)\nCPU / RAM\nBandwidth", 1.6),
+        (2.9, "Log Agent\n(pattern shifts)\nsyslog &\nstdout patterns", 4.0),
+        (5.3, "Trace Agent\n(RPC latencies)\nspan graphs &\ndependencies", 6.4),
+    ]
+    for ax0, label, center_x in agents:
+        _box(ax, ax0, 7.15, 2.2, 1.40, label, FILL_AMBER, BORDER_AMBER, fs=8.5)
+
+    # split arrows planner -> agents
+    ax.plot([cx, cx], [9.40, 9.0], color=COLOR_ARROW, lw=1.2)
+    ax.plot([1.6, 6.4], [9.0, 9.0], color=COLOR_ARROW, lw=1.2)
+    for _, _, center_x in agents:
+        _arrow(ax, center_x, 9.0, center_x, 8.55)
+
+    ax.text(7.6, 7.9, "each emits\nlocal posterior\n+ evidence ptrs\nto blackboard",
+            fontsize=7.5, color="#64748b", va="center", ha="left")
+
+    # 4. Autonomous peer interaction
+    _box(ax, fw_x, 5.35, fw_w, 1.00,
+         "AUTONOMOUS PEER INTERACTION  (MAS review round)\n"
+         "Exchange proposals   ⇄   Peer critique (support / challenge)   ⇄   Refine posteriors",
+         FILL_PURPLE, BORDER_PURPLE, fs=8.5, weight="bold")
+         
+    # merge agents -> interaction
+    for _, _, center_x in agents:
+        ax.plot([center_x, center_x], [7.15, 6.75], color=COLOR_ARROW, lw=1.0)
+    ax.plot([1.6, 6.4], [6.75, 6.75], color=COLOR_ARROW, lw=1.0)
+    _arrow(ax, cx, 6.75, cx, 6.35)
+
+    # 5. Correlation-aware fusion
+    _box(ax, fw_x, 4.05, fw_w, 1.00,
+         "CORRELATION-AWARE FUSION\n"
+         "Redundancy-discounted Log-Opinion Pool (Product of Experts)",
+         FILL_TEAL, BORDER_TEAL, fs=8.5, weight="bold")
+    _arrow(ax, cx, 5.35, cx, 5.05)
+
+    # 6. Causal re-rank + refinement
+    _box(ax, fw_x, 2.80, fw_w, 0.95,
+         "CAUSAL RE-RANK  +  TARGETED REFINEMENT\n"
+         "Score boosted by call-graph topology coverage & temporal anomaly precedence",
+         FILL_AZURE, BORDER_AZURE, fs=8.5)
+    _arrow(ax, cx, 4.05, cx, 3.75)
+
+    # 7. Adversarial falsifier
+    _box(ax, fw_x, 1.60, fw_w, 0.95,
+         "ADVERSARIAL FALSIFICATION GATE\n"
+         "Top-candidate verification against Blackboard runner-up scores",
+         FILL_ROSE, BORDER_ROSE, fs=8.5)
+    _arrow(ax, cx, 2.80, cx, 2.55)
+
+    # 8. Final answer
+    _box(ax, fw_x, 0.40, fw_w, 0.95,
+         "FINAL RCA ANSWER\n"
+         "Root-cause component + fault reason + occurrence timestamp  (+ audit trail)",
+         FILL_GREEN, BORDER_GREEN, fs=8.5, weight="bold")
+    _arrow(ax, cx, 1.60, cx, 1.35)
 
     out = "report/figures/shard_rca.png"
-    fig.tight_layout()
     fig.savefig(out, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"saved {out}")

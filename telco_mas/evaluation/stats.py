@@ -38,7 +38,10 @@ def wilson_ci(successes: int, total: int, *, confidence: float = 0.95) -> tuple[
     """Wilson score interval for binomial rates."""
     if total <= 0:
         return 0.0, 0.0, 0.0
-    z = 1.959963984540054 if confidence == 0.95 else 1.959963984540054
+    if not 0.0 < confidence < 1.0:
+        raise ValueError("confidence must be in (0, 1)")
+    alpha = 1.0 - float(confidence)
+    z = _norm_ppf(1.0 - alpha / 2.0)
     phat = successes / total
     denom = 1.0 + z * z / total
     center = (phat + z * z / (2.0 * total)) / denom

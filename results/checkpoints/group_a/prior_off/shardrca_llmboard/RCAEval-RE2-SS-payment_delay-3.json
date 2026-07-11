@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-SS-payment_delay-3",
+  "runtime_case_id": "RE2-SS-8d9440130b7d",
+  "source": "RE2-SS",
+  "system": "shardrca_llmboard",
+  "prior": "off",
+  "predicted_root": "user-db",
+  "true_root": "payment",
+  "hit_at_1": 0,
+  "hit_at_3": 1,
+  "mrr": 0.5,
+  "total_tokens": 21645,
+  "llm_calls": 3,
+  "tool_calls": 7,
+  "latency_s": 7.33
+}

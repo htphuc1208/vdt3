@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-travel-service_cpu-2",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-travel-service",
+  "ranked_roots": [
+    "ts-travel-service",
+    "ts-seat-service",
+    "ts-order-service",
+    "ts-ticket-office-mongo",
+    "ts-food-mongo",
+    "ts-config-mongo",
+    "ts-consign-service",
+    "ts-food-service",
+    "ts-payment-service",
+    "ts-assurance-service"
+  ],
+  "fault_type": "unknown",
+  "accepted": true,
+  "confidence": 0.6213187633726891,
+  "latency_s": 303.83,
+  "total_tokens": 279661,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-travel-service; no promotion."
+}

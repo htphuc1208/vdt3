@@ -60,7 +60,7 @@ Return ONLY JSON:
  ], "other_mass": 0.0, "notes": "short"}
 The candidate probabilities plus other_mass must sum to 1. Emit at most 8 candidates."""
 
-FALSIFIER_SYSTEM = """You are the final OpenRCA falsifier.
+FALSIFIER_SYSTEM = """You are the final OpenRCA evidence verifier.
 You receive targeted prepared-telemetry evidence for exactly two candidates.
 You may keep the top candidate or promote the runner-up. You may not invent a third candidate.
 Return ONLY JSON:
@@ -331,7 +331,7 @@ def _candidate_targeted_check(board: Blackboard, candidate: CandidateRootCause) 
                 counter_ptrs.append(finding.evidence_ptr)
     if not evidence:
         status = "REFUTED"
-    elif support >= max(0.05, refute * 1.25):
+    elif support > refute:
         status = "SUPPORTED"
     elif refute > support:
         status = "REFUTED"
@@ -357,9 +357,9 @@ def _select_by_targeted_checks(
     runner_support = float(runner_check.get("support_score") or 0.0)
     top_status = str(top_check.get("status") or "")
     runner_status = str(runner_check.get("status") or "")
-    if runner_status == "SUPPORTED" and top_status == "REFUTED":
+    if runner_status == "SUPPORTED" and top_status == "REFUTED" and runner_support >= top_support:
         return runner
-    if runner_status == "SUPPORTED" and runner_support > top_support + 0.05:
+    if runner_support > top_support:
         return runner
     return top
 

@@ -125,7 +125,7 @@ class WorkerDistribution(BaseModel):
 
 
 class Blackboard(BaseModel):
-    """Shared evidence board consumed by synthesizers and falsifiers."""
+    """Shared evidence board consumed by synthesizers and evidence verifiers."""
 
     case_id: str
     findings: list[Finding] = Field(default_factory=list)

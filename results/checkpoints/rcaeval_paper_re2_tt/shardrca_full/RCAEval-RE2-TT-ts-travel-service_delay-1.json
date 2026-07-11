@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-travel-service_delay-1",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-config-service",
+  "ranked_roots": [
+    "ts-preserve-service",
+    "ts-config-service",
+    "ts-security-service",
+    "ts-seat-service",
+    "ts-travel-service",
+    "ts-train-service",
+    "ts-order-service",
+    "ts-ticketinfo-service",
+    "ts-ticket-office-mongo",
+    "ts-travel2-mongo"
+  ],
+  "fault_type": "unknown",
+  "accepted": true,
+  "confidence": 0.23547751410751375,
+  "latency_s": 208.4,
+  "total_tokens": 285840,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Runner-up ts-config-service had stronger targeted evidence than ts-preserve-service; promoted runner-up."
+}

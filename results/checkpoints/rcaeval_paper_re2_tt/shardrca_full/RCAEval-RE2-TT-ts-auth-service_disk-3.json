@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_disk-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-auth-service",
+  "ranked_roots": [
+    "ts-auth-service",
+    "ts-food-map-service",
+    "ts-food-service",
+    "ts-travel-service",
+    "ts-payment-service",
+    "ts-order-other-service",
+    "ts-consign-service",
+    "ts-user-service",
+    "ts-inside-payment-service",
+    "ts-order-service"
+  ],
+  "fault_type": "db",
+  "accepted": true,
+  "confidence": 0.35862176353460323,
+  "latency_s": 180.96,
+  "total_tokens": 285000,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-auth-service; no promotion."
+}

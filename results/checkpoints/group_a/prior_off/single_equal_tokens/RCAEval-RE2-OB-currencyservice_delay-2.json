@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-OB-currencyservice_delay-2",
+  "runtime_case_id": "RE2-OB-d5dd50d2b872",
+  "source": "RE2-OB",
+  "system": "single_equal_tokens",
+  "prior": "off",
+  "predicted_root": "checkoutservice",
+  "true_root": "currencyservice",
+  "hit_at_1": 0,
+  "hit_at_3": 0,
+  "mrr": 0.2,
+  "total_tokens": 5400,
+  "llm_calls": 3,
+  "tool_calls": 4,
+  "latency_s": 8.78
+}

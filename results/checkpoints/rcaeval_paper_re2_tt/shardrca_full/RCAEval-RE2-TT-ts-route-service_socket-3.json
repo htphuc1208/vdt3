@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-route-service_socket-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-order-other-mongo",
+  "ranked_roots": [
+    "ts-order-other-mongo",
+    "ts-travel2-service",
+    "ts-basic-service",
+    "ts-ticketinfo-service",
+    "ts-travel-service",
+    "ts-order-other-service",
+    "ts-food-service",
+    "ts-payment-service",
+    "ts-assurance-service",
+    "ts-inside-payment-service"
+  ],
+  "fault_type": "mem",
+  "accepted": true,
+  "confidence": 0.4028886302662808,
+  "latency_s": 179.71,
+  "total_tokens": 282839,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-order-other-mongo; no promotion."
+}

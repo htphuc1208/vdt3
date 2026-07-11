@@ -1,0 +1,2992 @@
+{
+  "fingerprint": "ac04b6921e3c1ebd59f513fdb8d87bb53721f0671d98e0707e7d5de6f6851238",
+  "row": {
+    "row_id": 43,
+    "task_index": "task_6",
+    "instruction": "There was a failure within the time range of May 30, 2020, from 02:30 to 03:00. The exact component responsible for the failure and the underlying reason for this failure are currently unknown. Please identify the root cause component and reason.",
+    "prediction": "{\"1\": {\"root cause component\": \"db_002\", \"root cause reason\": \"CPU fault\"}}",
+    "scoring_points": "The only predicted root cause component is os_009\nThe only predicted root cause reason is network delay\n",
+    "passed": "",
+    "failed": "os_009\nnetwork delay",
+    "score": 0.0,
+    "strict_correct": false,
+    "system": "shardrca_full",
+    "latency_s": 70.87,
+    "total_tokens": 31224,
+    "llm_calls": 10,
+    "tool_calls": 2,
+    "artifacts": {
+      "candidate_catalog_source": {
+        "components": "prepared_runtime_telemetry",
+        "reasons": "protocol_prior_openrca_reason_catalog",
+        "label_derived": false,
+        "fallback_used": false
+      },
+      "candidate_catalog": {
+        "component_count": 43,
+        "reason_count": 5,
+        "components": [
+          "db_001",
+          "db_002",
+          "db_003",
+          "db_004",
+          "db_005",
+          "db_006",
+          "db_007",
+          "db_008",
+          "db_009",
+          "db_010",
+          "db_011",
+          "db_012",
+          "db_013",
+          "docker_001",
+          "docker_002",
+          "docker_003",
+          "docker_004",
+          "docker_005",
+          "docker_006",
+          "docker_007",
+          "docker_008",
+          "os_001",
+          "os_002",
+          "os_003",
+          "os_004",
+          "os_005",
+          "os_006",
+          "os_007",
+          "os_008",
+          "os_009",
+          "os_010",
+          "os_011",
+          "os_012",
+          "os_013",
+          "os_014",
+          "os_015",
+          "os_016",
+          "os_017",
+          "os_018",
+          "os_019",
+          "os_020",
+          "os_021",
+          "os_022"
+        ],
+        "reasons": [
+          "CPU fault",
+          "network delay",
+          "network loss",
+          "db connection limit",
+          "db close"
+        ]
+      },
+      "board_findings": [
+        {
+          "component": "os_001",
+          "modality": "metrics",
+          "signal": "Disk_svctm",
+          "direction": "high",
+          "score": 146.8,
+          "magnitude": 146.8,
+          "window": [
+            1590778326000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_001|Disk_svctm",
+          "summary": "Disk_svctm crossed daily p05/p95; direction=high; severity=146.8000"
+        },
+        {
+          "component": "os_022",
+          "modality": "metrics",
+          "signal": "Received_queue",
+          "direction": "high",
+          "score": 75.0,
+          "magnitude": 75.0,
+          "window": [
+            1590777891000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_022|Received_queue",
+          "summary": "Received_queue crossed daily p05/p95; direction=high; severity=75.0000"
+        },
+        {
+          "component": "os_022",
+          "modality": "traces",
+          "signal": "OSB",
+          "direction": "high",
+          "score": 66.2528,
+          "magnitude": 66.2528,
+          "window": [
+            1590777900144,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=115",
+          "summary": "trace latency mean=994.1510 max=38209.0000 count=6179"
+        },
+        {
+          "component": "os_022",
+          "modality": "traces",
+          "signal": "CSF",
+          "direction": "high",
+          "score": 65.1264,
+          "magnitude": 65.1264,
+          "window": [
+            1590777900164,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=114",
+          "summary": "trace latency mean=975.3957 max=38179.0000 count=6179"
+        },
+        {
+          "component": "docker_002",
+          "modality": "traces",
+          "signal": "RemoteProcess",
+          "direction": "high",
+          "score": 62.6613,
+          "magnitude": 62.6613,
+          "window": [
+            1590777958806,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=17",
+          "summary": "trace latency mean=965.3040 max=20187.0000 count=3066"
+        },
+        {
+          "component": "docker_001",
+          "modality": "traces",
+          "signal": "RemoteProcess",
+          "direction": "high",
+          "score": 60.6807,
+          "magnitude": 60.6807,
+          "window": [
+            1590777900172,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=0",
+          "summary": "trace latency mean=900.6739 max=38171.0000 count=3113"
+        },
+        {
+          "component": "os_021",
+          "modality": "traces",
+          "signal": "OSB",
+          "direction": "high",
+          "score": 48.2903,
+          "magnitude": 48.2903,
+          "window": [
+            1590777881417,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=113",
+          "summary": "trace latency mean=726.6046 max=21483.0000 count=6179"
+        },
+        {
+          "component": "os_021",
+          "modality": "traces",
+          "signal": "CSF",
+          "direction": "high",
+          "score": 47.2108,
+          "magnitude": 47.2108,
+          "window": [
+            1590777881430,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=112",
+          "summary": "trace latency mean=708.5637 max=21460.0000 count=6179"
+        },
+        {
+          "component": "docker_003",
+          "modality": "traces",
+          "signal": "RemoteProcess",
+          "direction": "high",
+          "score": 44.9658,
+          "magnitude": 44.9658,
+          "window": [
+            1590777840031,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=34",
+          "summary": "trace latency mean=674.3421 max=20014.0000 count=3104"
+        },
+        {
+          "component": "docker_004",
+          "modality": "traces",
+          "signal": "RemoteProcess",
+          "direction": "high",
+          "score": 44.6177,
+          "magnitude": 44.6177,
+          "window": [
+            1590778100196,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=51",
+          "summary": "trace latency mean=667.0924 max=20565.0000 count=3075"
+        },
+        {
+          "component": "db_002",
+          "modality": "metrics",
+          "signal": "Logic_Read_Per_Sec",
+          "direction": "high",
+          "score": 32.9254,
+          "magnitude": 32.9254,
+          "window": [
+            1590778168000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_002|Logic_Read_Per_Sec",
+          "summary": "Logic_Read_Per_Sec crossed daily p05/p95; direction=high; severity=32.9254"
+        },
+        {
+          "component": "os_002",
+          "modality": "metrics",
+          "signal": "Disk_io_util",
+          "direction": "high",
+          "score": 29.1176,
+          "magnitude": 29.1176,
+          "window": [
+            1590778241000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_002|Disk_io_util",
+          "summary": "Disk_io_util crossed daily p05/p95; direction=high; severity=29.1176"
+        },
+        {
+          "component": "docker_001",
+          "modality": "traces",
+          "signal": "FlyRemote",
+          "direction": "high",
+          "score": 23.6738,
+          "magnitude": 23.6738,
+          "window": [
+            1590778066477,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=5",
+          "summary": "trace latency mean=272.0315 max=20062.0000 count=3113"
+        },
+        {
+          "component": "docker_003",
+          "modality": "traces",
+          "signal": "FlyRemote",
+          "direction": "high",
+          "score": 22.9648,
+          "magnitude": 22.9648,
+          "window": [
+            1590777840035,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=39",
+          "summary": "trace latency mean=252.3228 max=20004.0000 count=3104"
+        },
+        {
+          "component": "docker_004",
+          "modality": "traces",
+          "signal": "FlyRemote",
+          "direction": "high",
+          "score": 22.2451,
+          "magnitude": 22.2451,
+          "window": [
+            1590777980281,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=56",
+          "summary": "trace latency mean=227.7951 max=20002.0000 count=3075"
+        },
+        {
+          "component": "docker_002",
+          "modality": "traces",
+          "signal": "FlyRemote",
+          "direction": "high",
+          "score": 21.9833,
+          "magnitude": 21.9833,
+          "window": [
+            1590777958811,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=22",
+          "summary": "trace latency mean=215.0192 max=20081.0000 count=3066"
+        },
+        {
+          "component": "db_009",
+          "modality": "metrics",
+          "signal": "Redo_Per_Sec",
+          "direction": "high",
+          "score": 17.7311,
+          "magnitude": 17.7311,
+          "window": [
+            1590778648000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_009|Redo_Per_Sec",
+          "summary": "Redo_Per_Sec crossed daily p05/p95; direction=high; severity=17.7311"
+        },
+        {
+          "component": "os_001",
+          "modality": "metrics",
+          "signal": "Disk_io_util",
+          "direction": "high",
+          "score": 16.9068,
+          "magnitude": 16.9068,
+          "window": [
+            1590778228000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_001|Disk_io_util",
+          "summary": "Disk_io_util crossed daily p05/p95; direction=high; severity=16.9068"
+        },
+        {
+          "component": "db_002",
+          "modality": "metrics",
+          "signal": "Physical_Read_Per_Sec",
+          "direction": "high",
+          "score": 12.5385,
+          "magnitude": 12.5385,
+          "window": [
+            1590778708000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_002|Physical_Read_Per_Sec",
+          "summary": "Physical_Read_Per_Sec crossed daily p05/p95; direction=high; severity=12.5385"
+        },
+        {
+          "component": "docker_003",
+          "modality": "traces",
+          "signal": "db_009",
+          "direction": "high",
+          "score": 11.794,
+          "magnitude": 11.794,
+          "window": [
+            1590778583139,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=50",
+          "summary": "trace latency mean=2.3714 max=400.0000 count=43056"
+        },
+        {
+          "component": "db_003",
+          "modality": "metrics",
+          "signal": "DbTime",
+          "direction": "high",
+          "score": 10.729,
+          "magnitude": 10.729,
+          "window": [
+            1590777509000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_003|DbTime",
+          "summary": "DbTime crossed daily p05/p95; direction=high; severity=10.7290"
+        },
+        {
+          "component": "os_012",
+          "modality": "metrics",
+          "signal": "Disk_await",
+          "direction": "high",
+          "score": 10.3829,
+          "magnitude": 10.3829,
+          "window": [
+            1590777778000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_012|Disk_await",
+          "summary": "Disk_await crossed daily p05/p95; direction=high; severity=10.3829"
+        },
+        {
+          "component": "os_021",
+          "modality": "metrics",
+          "signal": "Disk_io_util",
+          "direction": "high",
+          "score": 9.0,
+          "magnitude": 9.0,
+          "window": [
+            1590778327000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_021|Disk_io_util",
+          "summary": "Disk_io_util crossed daily p05/p95; direction=high; severity=9.0000"
+        },
+        {
+          "component": "docker_002",
+          "modality": "traces",
+          "signal": "db_009",
+          "direction": "high",
+          "score": 8.7369,
+          "magnitude": 8.7369,
+          "window": [
+            1590777025397,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=33",
+          "summary": "trace latency mean=3.4812 max=395.0000 count=42609"
+        },
+        {
+          "component": "docker_004",
+          "modality": "traces",
+          "signal": "db_009",
+          "direction": "high",
+          "score": 8.6498,
+          "magnitude": 8.6498,
+          "window": [
+            1590778119965,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=67",
+          "summary": "trace latency mean=2.3487 max=292.0000 count=42649"
+        },
+        {
+          "component": "os_022",
+          "modality": "metrics",
+          "signal": "Disk_io_util",
+          "direction": "high",
+          "score": 8.25,
+          "magnitude": 8.25,
+          "window": [
+            1590778229000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_022|Disk_io_util",
+          "summary": "Disk_io_util crossed daily p05/p95; direction=high; severity=8.2500"
+        },
+        {
+          "component": "db_003",
+          "modality": "metrics",
+          "signal": "Sess_Active",
+          "direction": "high",
+          "score": 7.1935,
+          "magnitude": 7.1935,
+          "window": [
+            1590777509000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_003|Sess_Active",
+          "summary": "Sess_Active crossed daily p05/p95; direction=high; severity=7.1935"
+        },
+        {
+          "component": "os_012",
+          "modality": "metrics",
+          "signal": "Disk_svctm",
+          "direction": "high",
+          "score": 5.4317,
+          "magnitude": 5.4317,
+          "window": [
+            1590778254000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_012|Disk_svctm",
+          "summary": "Disk_svctm crossed daily p05/p95; direction=high; severity=5.4317"
+        },
+        {
+          "component": "redis_008",
+          "modality": "metrics",
+          "signal": "instantaneous_output_kbps",
+          "direction": "high",
+          "score": 5.43,
+          "magnitude": 5.43,
+          "window": [
+            1590777227000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_middleware.parquet#redis_008|instantaneous_output_kbps",
+          "summary": "instantaneous_output_kbps crossed daily p05/p95; direction=high; severity=5.4300"
+        },
+        {
+          "component": "os_011",
+          "modality": "metrics",
+          "signal": "Disk_await",
+          "direction": "high",
+          "score": 5.1907,
+          "magnitude": 5.1907,
+          "window": [
+            1590777890000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_011|Disk_await",
+          "summary": "Disk_await crossed daily p05/p95; direction=high; severity=5.1907"
+        },
+        {
+          "component": "docker_001",
+          "modality": "traces",
+          "signal": "db_009",
+          "direction": "high",
+          "score": 4.9899,
+          "magnitude": 4.9899,
+          "window": [
+            1590777513344,
+            null
+          ],
+          "evidence": "rows/043/trace_summary.parquet#row=16",
+          "summary": "trace latency mean=2.8311 max=194.0000 count=43161"
+        },
+        {
+          "component": "db_003",
+          "modality": "metrics",
+          "signal": "Session_pct",
+          "direction": "high",
+          "score": 4.4606,
+          "magnitude": 4.4606,
+          "window": [
+            1590777507000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_003|Session_pct",
+          "summary": "Session_pct crossed daily p05/p95; direction=high; severity=4.4606"
+        },
+        {
+          "component": "db_012",
+          "modality": "metrics",
+          "signal": "SeqRead_Per_Sec",
+          "direction": "high",
+          "score": 4.1102,
+          "magnitude": 4.1102,
+          "window": [
+            1590777929000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_012|SeqRead_Per_Sec",
+          "summary": "SeqRead_Per_Sec crossed daily p05/p95; direction=high; severity=4.1102"
+        },
+        {
+          "component": "os_010",
+          "modality": "metrics",
+          "signal": "Disk_await",
+          "direction": "high",
+          "score": 4.0,
+          "magnitude": 4.0,
+          "window": [
+            1590777054000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_010|Disk_await",
+          "summary": "Disk_await crossed daily p05/p95; direction=high; severity=4.0000"
+        },
+        {
+          "component": "os_022",
+          "modality": "metrics",
+          "signal": "Disk_await",
+          "direction": "high",
+          "score": 3.27,
+          "magnitude": 3.27,
+          "window": [
+            1590777506000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_022|Disk_await",
+          "summary": "Disk_await crossed daily p05/p95; direction=high; severity=3.2700"
+        },
+        {
+          "component": "db_005",
+          "modality": "metrics",
+          "signal": "LFSync_Per_Sec",
+          "direction": "high",
+          "score": 3.2563,
+          "magnitude": 3.2563,
+          "window": [
+            1590777268000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_005|LFSync_Per_Sec",
+          "summary": "LFSync_Per_Sec crossed daily p05/p95; direction=high; severity=3.2563"
+        },
+        {
+          "component": "db_004",
+          "modality": "metrics",
+          "signal": "SeqRead_Per_Sec",
+          "direction": "high",
+          "score": 3.0169,
+          "magnitude": 3.0169,
+          "window": [
+            1590778288000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_004|SeqRead_Per_Sec",
+          "summary": "SeqRead_Per_Sec crossed daily p05/p95; direction=high; severity=3.0169"
+        },
+        {
+          "component": "os_013",
+          "modality": "metrics",
+          "signal": "Disk_svctm",
+          "direction": "high",
+          "score": 2.9725,
+          "magnitude": 2.9725,
+          "window": [
+            1590778142000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_013|Disk_svctm",
+          "summary": "Disk_svctm crossed daily p05/p95; direction=high; severity=2.9725"
+        },
+        {
+          "component": "os_020",
+          "modality": "metrics",
+          "signal": "Disk_await",
+          "direction": "high",
+          "score": 2.4882,
+          "magnitude": 2.4882,
+          "window": [
+            1590777874000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_020|Disk_await",
+          "summary": "Disk_await crossed daily p05/p95; direction=high; severity=2.4882"
+        },
+        {
+          "component": "os_021",
+          "modality": "metrics",
+          "signal": "Sent_queue",
+          "direction": "high",
+          "score": 2.3333,
+          "magnitude": 2.3333,
+          "window": [
+            1590778378000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_021|Sent_queue",
+          "summary": "Sent_queue crossed daily p05/p95; direction=high; severity=2.3333"
+        },
+        {
+          "component": "os_003",
+          "modality": "metrics",
+          "signal": "Disk_svctm",
+          "direction": "high",
+          "score": 2.158,
+          "magnitude": 2.158,
+          "window": [
+            1590777990000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_003|Disk_svctm",
+          "summary": "Disk_svctm crossed daily p05/p95; direction=high; severity=2.1580"
+        },
+        {
+          "component": "db_005",
+          "modality": "metrics",
+          "signal": "DFParaWrite_Per_Sec",
+          "direction": "high",
+          "score": 2.1374,
+          "magnitude": 2.1374,
+          "window": [
+            1590778468000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_005|DFParaWrite_Per_Sec",
+          "summary": "DFParaWrite_Per_Sec crossed daily p05/p95; direction=high; severity=2.1374"
+        },
+        {
+          "component": "db_013",
+          "modality": "metrics",
+          "signal": "Call_Per_Sec",
+          "direction": "high",
+          "score": 2.0649,
+          "magnitude": 2.0649,
+          "window": [
+            1590777029000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_013|Call_Per_Sec",
+          "summary": "Call_Per_Sec crossed daily p05/p95; direction=high; severity=2.0649"
+        },
+        {
+          "component": "os_004",
+          "modality": "metrics",
+          "signal": "Disk_io_util",
+          "direction": "high",
+          "score": 2.0,
+          "magnitude": 2.0,
+          "window": [
+            1590777669000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_004|Disk_io_util",
+          "summary": "Disk_io_util crossed daily p05/p95; direction=high; severity=2.0000"
+        },
+        {
+          "component": "os_009",
+          "modality": "metrics",
+          "signal": "Sent_queue",
+          "direction": "high",
+          "score": 1.9635,
+          "magnitude": 1.9635,
+          "window": [
+            1590777922000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_009|Sent_queue",
+          "summary": "Sent_queue crossed daily p05/p95; direction=high; severity=1.9635"
+        },
+        {
+          "component": "db_005",
+          "modality": "metrics",
+          "signal": "DbTime",
+          "direction": "high",
+          "score": 1.9456,
+          "magnitude": 1.9456,
+          "window": [
+            1590778108000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_005|DbTime",
+          "summary": "DbTime crossed daily p05/p95; direction=high; severity=1.9456"
+        },
+        {
+          "component": "os_003",
+          "modality": "metrics",
+          "signal": "Disk_await",
+          "direction": "high",
+          "score": 1.9372,
+          "magnitude": 1.9372,
+          "window": [
+            1590777274000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_003|Disk_await",
+          "summary": "Disk_await crossed daily p05/p95; direction=high; severity=1.9372"
+        },
+        {
+          "component": "os_008",
+          "modality": "metrics",
+          "signal": "Disk_await",
+          "direction": "high",
+          "score": 1.7273,
+          "magnitude": 1.7273,
+          "window": [
+            1590777586000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_008|Disk_await",
+          "summary": "Disk_await crossed daily p05/p95; direction=high; severity=1.7273"
+        },
+        {
+          "component": "db_005",
+          "modality": "metrics",
+          "signal": "SeqRead_Per_Sec",
+          "direction": "high",
+          "score": 1.5945,
+          "magnitude": 1.5945,
+          "window": [
+            1590778048000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_005|SeqRead_Per_Sec",
+          "summary": "SeqRead_Per_Sec crossed daily p05/p95; direction=high; severity=1.5945"
+        },
+        {
+          "component": "osb_001",
+          "modality": "metrics",
+          "signal": "avg_time",
+          "direction": "high",
+          "score": 1.5752,
+          "magnitude": 1.5752,
+          "window": [
+            1590777900000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_app.parquet#osb_001|avg_time",
+          "summary": "avg_time crossed daily p05/p95; direction=high; severity=1.5752"
+        },
+        {
+          "component": "db_002",
+          "modality": "metrics",
+          "signal": "SeqRead_Per_Sec",
+          "direction": "high",
+          "score": 1.5486,
+          "magnitude": 1.5486,
+          "window": [
+            1590778168000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_002|SeqRead_Per_Sec",
+          "summary": "SeqRead_Per_Sec crossed daily p05/p95; direction=high; severity=1.5486"
+        },
+        {
+          "component": "os_022",
+          "modality": "metrics",
+          "signal": "Disk_avgqu_sz",
+          "direction": "high",
+          "score": 1.3732,
+          "magnitude": 1.3732,
+          "window": [
+            1590778166000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_022|Disk_avgqu_sz",
+          "summary": "Disk_avgqu_sz crossed daily p05/p95; direction=high; severity=1.3732"
+        },
+        {
+          "component": "db_002",
+          "modality": "metrics",
+          "signal": "Login_Per_Sec",
+          "direction": "high",
+          "score": 1.3571,
+          "magnitude": 1.3571,
+          "window": [
+            1590778168000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_002|Login_Per_Sec",
+          "summary": "Login_Per_Sec crossed daily p05/p95; direction=high; severity=1.3571"
+        },
+        {
+          "component": "db_001",
+          "modality": "metrics",
+          "signal": "Logic_Read_Per_Sec",
+          "direction": "high",
+          "score": 1.319,
+          "magnitude": 1.319,
+          "window": [
+            1590777569000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_001|Logic_Read_Per_Sec",
+          "summary": "Logic_Read_Per_Sec crossed daily p05/p95; direction=high; severity=1.3190"
+        },
+        {
+          "component": "db_001",
+          "modality": "metrics",
+          "signal": "DFParaWrite_Per_Sec",
+          "direction": "high",
+          "score": 1.2071,
+          "magnitude": 1.2071,
+          "window": [
+            1590777809000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_001|DFParaWrite_Per_Sec",
+          "summary": "DFParaWrite_Per_Sec crossed daily p05/p95; direction=high; severity=1.2071"
+        },
+        {
+          "component": "os_014",
+          "modality": "metrics",
+          "signal": "Sent_queue",
+          "direction": "high",
+          "score": 1.1417,
+          "magnitude": 1.1417,
+          "window": [
+            1590777398000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_014|Sent_queue",
+          "summary": "Sent_queue crossed daily p05/p95; direction=high; severity=1.1417"
+        },
+        {
+          "component": "db_004",
+          "modality": "metrics",
+          "signal": "Redo_Per_Sec",
+          "direction": "high",
+          "score": 1.1025,
+          "magnitude": 1.1025,
+          "window": [
+            1590778288000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_004|Redo_Per_Sec",
+          "summary": "Redo_Per_Sec crossed daily p05/p95; direction=high; severity=1.1025"
+        },
+        {
+          "component": "db_003",
+          "modality": "metrics",
+          "signal": "SeqRead_Per_Sec",
+          "direction": "high",
+          "score": 1.0148,
+          "magnitude": 1.0148,
+          "window": [
+            1590777627000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_003|SeqRead_Per_Sec",
+          "summary": "SeqRead_Per_Sec crossed daily p05/p95; direction=high; severity=1.0148"
+        },
+        {
+          "component": "db_001",
+          "modality": "metrics",
+          "signal": "Login_Per_Sec",
+          "direction": "high",
+          "score": 1.0,
+          "magnitude": 1.0,
+          "window": [
+            1590777569000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_001|Login_Per_Sec",
+          "summary": "Login_Per_Sec crossed daily p05/p95; direction=high; severity=1.0000"
+        },
+        {
+          "component": "os_017",
+          "modality": "metrics",
+          "signal": "Disk_svctm",
+          "direction": "high",
+          "score": 0.9936,
+          "magnitude": 0.9936,
+          "window": [
+            1590777222000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_017|Disk_svctm",
+          "summary": "Disk_svctm crossed daily p05/p95; direction=high; severity=0.9936"
+        },
+        {
+          "component": "os_005",
+          "modality": "metrics",
+          "signal": "Disk_io_util",
+          "direction": "high",
+          "score": 0.9672,
+          "magnitude": 0.9672,
+          "window": [
+            1590777074000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_005|Disk_io_util",
+          "summary": "Disk_io_util crossed daily p05/p95; direction=high; severity=0.9672"
+        },
+        {
+          "component": "os_003",
+          "modality": "metrics",
+          "signal": "Disk_io_util",
+          "direction": "high",
+          "score": 0.9671,
+          "magnitude": 0.9671,
+          "window": [
+            1590777183000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_003|Disk_io_util",
+          "summary": "Disk_io_util crossed daily p05/p95; direction=high; severity=0.9671"
+        },
+        {
+          "component": "os_017",
+          "modality": "metrics",
+          "signal": "Recv_total",
+          "direction": "low",
+          "score": 0.9456,
+          "magnitude": 0.9456,
+          "window": [
+            1590778081000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_node.parquet#os_017|Recv_total",
+          "summary": "Recv_total crossed daily p05/p95; direction=low; severity=0.9456"
+        },
+        {
+          "component": "db_003",
+          "modality": "metrics",
+          "signal": "LFSync_Per_Sec",
+          "direction": "high",
+          "score": 0.9292,
+          "magnitude": 0.9292,
+          "window": [
+            1590777687000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_003|LFSync_Per_Sec",
+          "summary": "LFSync_Per_Sec crossed daily p05/p95; direction=high; severity=0.9292"
+        },
+        {
+          "component": "osb_001",
+          "modality": "metrics",
+          "signal": "succee_num",
+          "direction": "low",
+          "score": 0.875,
+          "magnitude": 0.875,
+          "window": [
+            1590777900000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_app.parquet#osb_001|succee_num",
+          "summary": "succee_num crossed daily p05/p95; direction=low; severity=0.8750"
+        },
+        {
+          "component": "db_003",
+          "modality": "metrics",
+          "signal": "Call_Per_Sec",
+          "direction": "low",
+          "score": 0.8479,
+          "magnitude": 0.8479,
+          "window": [
+            1590778109000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_003|Call_Per_Sec",
+          "summary": "Call_Per_Sec crossed daily p05/p95; direction=low; severity=0.8479"
+        },
+        {
+          "component": "db_003",
+          "modality": "metrics",
+          "signal": "TPS_Per_Sec",
+          "direction": "low",
+          "score": 0.8465,
+          "magnitude": 0.8465,
+          "window": [
+            1590778049000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_service.parquet#db_003|TPS_Per_Sec",
+          "summary": "TPS_Per_Sec crossed daily p05/p95; direction=low; severity=0.8465"
+        },
+        {
+          "component": "redis_007",
+          "modality": "metrics",
+          "signal": "instantaneous_input_kbps",
+          "direction": "high",
+          "score": 0.7904,
+          "magnitude": 0.7904,
+          "window": [
+            1590777335000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_middleware.parquet#redis_007|instantaneous_input_kbps",
+          "summary": "instantaneous_input_kbps crossed daily p05/p95; direction=high; severity=0.7904"
+        },
+        {
+          "component": "osb_001",
+          "modality": "metrics",
+          "signal": "succee_rate",
+          "direction": "low",
+          "score": 0.4966,
+          "magnitude": 0.4966,
+          "window": [
+            1590777900000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_app.parquet#osb_001|succee_rate",
+          "summary": "succee_rate crossed daily p05/p95; direction=low; severity=0.4966"
+        },
+        {
+          "component": "docker_003",
+          "modality": "metrics",
+          "signal": "container_cpu_used",
+          "direction": "high",
+          "score": 0.3333,
+          "magnitude": 0.3333,
+          "window": [
+            1590778260000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_container.parquet#docker_003|container_cpu_used",
+          "summary": "container_cpu_used crossed daily p05/p95; direction=high; severity=0.3333"
+        },
+        {
+          "component": "docker_004",
+          "modality": "metrics",
+          "signal": "container_cpu_used",
+          "direction": "low",
+          "score": 0.3333,
+          "magnitude": 0.3333,
+          "window": [
+            1590778033000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_container.parquet#docker_004|container_cpu_used",
+          "summary": "container_cpu_used crossed daily p05/p95; direction=low; severity=0.3333"
+        },
+        {
+          "component": "docker_007",
+          "modality": "metrics",
+          "signal": "container_cpu_used",
+          "direction": "high",
+          "score": 0.125,
+          "magnitude": 0.125,
+          "window": [
+            1590778593000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_container.parquet#docker_007|container_cpu_used",
+          "summary": "container_cpu_used crossed daily p05/p95; direction=high; severity=0.1250"
+        },
+        {
+          "component": "osb_001",
+          "modality": "metrics",
+          "signal": "num",
+          "direction": "low",
+          "score": 0.0909,
+          "magnitude": 0.0909,
+          "window": [
+            1590777900000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_app.parquet#osb_001|num",
+          "summary": "num crossed daily p05/p95; direction=low; severity=0.0909"
+        },
+        {
+          "component": "docker_006",
+          "modality": "metrics",
+          "signal": "container_cpu_used",
+          "direction": "high",
+          "score": 0.0593,
+          "magnitude": 0.0593,
+          "window": [
+            1590777034000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_container.parquet#docker_006|container_cpu_used",
+          "summary": "container_cpu_used crossed daily p05/p95; direction=high; severity=0.0593"
+        },
+        {
+          "component": "docker_001",
+          "modality": "metrics",
+          "signal": "container_cpu_used",
+          "direction": "high",
+          "score": 0.0349,
+          "magnitude": 0.0349,
+          "window": [
+            1590777017000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_container.parquet#docker_001|container_cpu_used",
+          "summary": "container_cpu_used crossed daily p05/p95; direction=high; severity=0.0349"
+        },
+        {
+          "component": "docker_005",
+          "modality": "metrics",
+          "signal": "container_cpu_used",
+          "direction": "high",
+          "score": 0.0122,
+          "magnitude": 0.0122,
+          "window": [
+            1590777373000.0,
+            null
+          ],
+          "evidence": "rows/043/metric/metric_container.parquet#docker_005|container_cpu_used",
+          "summary": "container_cpu_used crossed daily p05/p95; direction=high; severity=0.0122"
+        }
+      ],
+      "worker_distributions": [
+        {
+          "worker_id": "node_metrics",
+          "modality": "metrics",
+          "candidate_scope": [
+            "os_001",
+            "os_002",
+            "os_003",
+            "os_004",
+            "os_005",
+            "os_008",
+            "os_009",
+            "os_010",
+            "os_011",
+            "os_012",
+            "os_013",
+            "os_014",
+            "os_017",
+            "os_020",
+            "os_021",
+            "os_022"
+          ],
+          "candidates": [
+            {
+              "component": "os_001",
+              "reason_family": "CPU fault",
+              "support_score": 0.25,
+              "refute_score": 0.0,
+              "probability": 0.225,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_001|Disk_svctm",
+                "rows/043/metric/metric_node.parquet#os_001|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_svctm and Disk_io_util indicate potential CPU fault."
+            },
+            {
+              "component": "os_022",
+              "reason_family": "network delay",
+              "support_score": 0.2,
+              "refute_score": 0.0,
+              "probability": 0.18,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 2,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_022|Received_queue",
+                "rows/043/metric/metric_node.parquet#os_022|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Received_queue suggests network delay issues."
+            },
+            {
+              "component": "os_002",
+              "reason_family": "db connection limit",
+              "support_score": 0.15,
+              "refute_score": 0.0,
+              "probability": 0.135,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 3,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_002|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_io_util may indicate db connection limits being reached."
+            },
+            {
+              "component": "os_012",
+              "reason_family": "db close",
+              "support_score": 0.1,
+              "refute_score": 0.0,
+              "probability": 0.09,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 4,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_012|Disk_await",
+                "rows/043/metric/metric_node.parquet#os_012|Disk_svctm"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_await and Disk_svctm could suggest issues with db close operations."
+            },
+            {
+              "component": "os_021",
+              "reason_family": "network loss",
+              "support_score": 0.1,
+              "refute_score": 0.0,
+              "probability": 0.09,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 5,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_021|Disk_io_util",
+                "rows/043/metric/metric_node.parquet#os_021|Sent_queue"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_io_util and Sent_queue may indicate network loss."
+            },
+            {
+              "component": "os_003",
+              "reason_family": "CPU fault",
+              "support_score": 0.1,
+              "refute_score": 0.0,
+              "probability": 0.09,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 6,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_003|Disk_svctm",
+                "rows/043/metric/metric_node.parquet#os_003|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_svctm and Disk_io_util suggest potential CPU fault."
+            },
+            {
+              "component": "os_004",
+              "reason_family": "db connection limit",
+              "support_score": 0.05,
+              "refute_score": 0.0,
+              "probability": 0.045,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 7,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_004|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_io_util may indicate db connection limits."
+            },
+            {
+              "component": "os_005",
+              "reason_family": "network delay",
+              "support_score": 0.05,
+              "refute_score": 0.0,
+              "probability": 0.045,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 8,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_005|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_io_util could suggest network delay."
+            }
+          ],
+          "other_mass": 0.1,
+          "notes": "Distribution based on high severity metrics indicating potential issues. autonomous_peer_interaction"
+        },
+        {
+          "worker_id": "container_metrics",
+          "modality": "metrics",
+          "candidate_scope": [
+            "docker_001",
+            "docker_003",
+            "docker_004",
+            "docker_005",
+            "docker_006",
+            "docker_007"
+          ],
+          "candidates": [
+            {
+              "component": "docker_003",
+              "reason_family": "CPU fault",
+              "support_score": 0.3333,
+              "refute_score": 0.0,
+              "probability": 0.372388,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_003|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "High CPU usage indicates a potential CPU fault."
+            },
+            {
+              "component": "docker_004",
+              "reason_family": "CPU fault",
+              "support_score": 0.0,
+              "refute_score": 0.3333,
+              "probability": 0.369074,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 2,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_004|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "Low CPU usage could indicate an issue, but not a fault."
+            },
+            {
+              "component": "docker_007",
+              "reason_family": "CPU fault",
+              "support_score": 0.125,
+              "refute_score": 0.0,
+              "probability": 0.139659,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 3,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_007|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "High CPU usage suggests a CPU fault."
+            },
+            {
+              "component": "docker_006",
+              "reason_family": "CPU fault",
+              "support_score": 0.0593,
+              "refute_score": 0.0,
+              "probability": 0.066255,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 4,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_006|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "High CPU usage indicates a potential CPU fault."
+            },
+            {
+              "component": "docker_001",
+              "reason_family": "CPU fault",
+              "support_score": 0.0349,
+              "refute_score": 0.0,
+              "probability": 0.038993,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 5,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_001|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "High CPU usage suggests a CPU fault."
+            },
+            {
+              "component": "docker_005",
+              "reason_family": "CPU fault",
+              "support_score": 0.0122,
+              "refute_score": 0.0,
+              "probability": 0.013631,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 6,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_005|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "High CPU usage indicates a potential CPU fault."
+            }
+          ],
+          "other_mass": 0.0,
+          "notes": "All candidates are related to CPU faults based on high usage metrics. autonomous_peer_interaction"
+        },
+        {
+          "worker_id": "service_middleware_metrics",
+          "modality": "metrics",
+          "candidate_scope": [
+            "db_001",
+            "db_002",
+            "db_003",
+            "db_004",
+            "db_005",
+            "db_009",
+            "db_012",
+            "db_013"
+          ],
+          "candidates": [
+            {
+              "component": "db_002",
+              "reason_family": "CPU fault",
+              "support_score": 0.4,
+              "refute_score": 0.0,
+              "probability": 0.36,
+              "modality": "metrics",
+              "worker_id": "service_middleware_metrics",
+              "shard_id": "service_middleware_metrics",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/metric/metric_service.parquet#db_002|Logic_Read_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_002|Physical_Read_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_002|SeqRead_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_002|Login_Per_Sec"
+              ],
+              "missing_evidence": [],
+              "rationale": "High metrics indicate potential CPU issues."
+            },
+            {
+              "component": "db_003",
+              "reason_family": "db connection limit",
+              "support_score": 0.3,
+              "refute_score": 0.0,
+              "probability": 0.27,
+              "modality": "metrics",
+              "worker_id": "service_middleware_metrics",
+              "shard_id": "service_middleware_metrics",
+              "local_rank": 2,
+              "evidence": [
+                "rows/043/metric/metric_service.parquet#db_003|DbTime",
+                "rows/043/metric/metric_service.parquet#db_003|Sess_Active",
+                "rows/043/metric/metric_service.parquet#db_003|Session_pct",
+                "rows/043/metric/metric_service.parquet#db_003|SeqRead_Per_Sec"
+              ],
+              "missing_evidence": [],
+              "rationale": "High DbTime and active sessions suggest connection limits may be reached."
+            },
+            {
+              "component": "db_009",
+              "reason_family": "network delay",
+              "support_score": 0.2,
+              "refute_score": 0.0,
+              "probability": 0.18,
+              "modality": "metrics",
+              "worker_id": "service_middleware_metrics",
+              "shard_id": "service_middleware_metrics",
+              "local_rank": 3,
+              "evidence": [
+                "rows/043/metric/metric_service.parquet#db_009|Redo_Per_Sec"
+              ],
+              "missing_evidence": [],
+              "rationale": "High redo rates can indicate network issues."
+            },
+            {
+              "component": "db_005",
+              "reason_family": "db close",
+              "support_score": 0.1,
+              "refute_score": 0.0,
+              "probability": 0.09,
+              "modality": "metrics",
+              "worker_id": "service_middleware_metrics",
+              "shard_id": "service_middleware_metrics",
+              "local_rank": 4,
+              "evidence": [
+                "rows/043/metric/metric_service.parquet#db_005|LFSync_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_005|DFParaWrite_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_005|SeqRead_Per_Sec"
+              ],
+              "missing_evidence": [],
+              "rationale": "Metrics suggest potential issues with database closure."
+            }
+          ],
+          "other_mass": 0.1,
+          "notes": "Distribution based on high severity metrics. autonomous_peer_interaction"
+        },
+        {
+          "worker_id": "trace_dependencies",
+          "modality": "traces",
+          "candidate_scope": [
+            "docker_001",
+            "docker_002",
+            "docker_003",
+            "docker_004",
+            "os_021",
+            "os_022"
+          ],
+          "candidates": [
+            {
+              "component": "os_022",
+              "reason_family": "CPU fault",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.242679,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=115",
+                "rows/043/trace_summary.parquet#row=114"
+              ],
+              "missing_evidence": [],
+              "rationale": "High latency signals from os_022 suggest a CPU fault."
+            },
+            {
+              "component": "docker_002",
+              "reason_family": "network delay",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.194143,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 2,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=17"
+              ],
+              "missing_evidence": [],
+              "rationale": "High latency in docker_002 indicates potential network delay."
+            },
+            {
+              "component": "docker_001",
+              "reason_family": "network loss",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.145608,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 3,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=0"
+              ],
+              "missing_evidence": [],
+              "rationale": "High latency in docker_001 may suggest network loss."
+            },
+            {
+              "component": "os_021",
+              "reason_family": "db connection limit",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.097072,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 4,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=113",
+                "rows/043/trace_summary.parquet#row=112"
+              ],
+              "missing_evidence": [],
+              "rationale": "Latency in os_021 could be due to db connection limits."
+            },
+            {
+              "component": "docker_003",
+              "reason_family": "db close",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.097072,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 5,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=34"
+              ],
+              "missing_evidence": [],
+              "rationale": "High latency in docker_003 may indicate issues with db close."
+            },
+            {
+              "component": "docker_004",
+              "reason_family": "network delay",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.048536,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 6,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=51"
+              ],
+              "missing_evidence": [],
+              "rationale": "Latency in docker_004 suggests possible network delay."
+            },
+            {
+              "component": "docker_002",
+              "reason_family": "db connection limit",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.048536,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 7,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=33"
+              ],
+              "missing_evidence": [],
+              "rationale": "High latency in docker_002 could be due to db connection limits."
+            },
+            {
+              "component": "docker_003",
+              "reason_family": "CPU fault",
+              "support_score": 0.0167,
+              "refute_score": 0.0,
+              "probability": 0.026355,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 8,
+              "evidence": [],
+              "missing_evidence": [],
+              "rationale": "Added as a peer hypothesis inside this worker's candidate scope."
+            }
+          ],
+          "other_mass": 0.1,
+          "notes": "Distribution based on latency findings across components. autonomous_peer_interaction"
+        },
+        {
+          "worker_id": "application_symptoms",
+          "modality": "metrics",
+          "candidate_scope": [],
+          "candidates": [],
+          "other_mass": 1.0,
+          "notes": "deterministic fallback with no scoped candidate evidence"
+        }
+      ],
+      "pre_interaction_worker_distributions": [
+        {
+          "worker_id": "node_metrics",
+          "modality": "metrics",
+          "candidate_scope": [
+            "os_001",
+            "os_002",
+            "os_003",
+            "os_004",
+            "os_005",
+            "os_008",
+            "os_009",
+            "os_010",
+            "os_011",
+            "os_012",
+            "os_013",
+            "os_014",
+            "os_017",
+            "os_020",
+            "os_021",
+            "os_022"
+          ],
+          "candidates": [
+            {
+              "component": "os_001",
+              "reason_family": "CPU fault",
+              "support_score": 0.25,
+              "refute_score": 0.0,
+              "probability": 0.25,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_001|Disk_svctm",
+                "rows/043/metric/metric_node.parquet#os_001|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_svctm and Disk_io_util indicate potential CPU fault."
+            },
+            {
+              "component": "os_022",
+              "reason_family": "network delay",
+              "support_score": 0.2,
+              "refute_score": 0.0,
+              "probability": 0.2,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 2,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_022|Received_queue",
+                "rows/043/metric/metric_node.parquet#os_022|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Received_queue suggests network delay issues."
+            },
+            {
+              "component": "os_002",
+              "reason_family": "db connection limit",
+              "support_score": 0.15,
+              "refute_score": 0.0,
+              "probability": 0.15,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 3,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_002|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_io_util may indicate db connection limits being reached."
+            },
+            {
+              "component": "os_012",
+              "reason_family": "db close",
+              "support_score": 0.1,
+              "refute_score": 0.0,
+              "probability": 0.1,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 4,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_012|Disk_await",
+                "rows/043/metric/metric_node.parquet#os_012|Disk_svctm"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_await and Disk_svctm could suggest issues with db close operations."
+            },
+            {
+              "component": "os_021",
+              "reason_family": "network loss",
+              "support_score": 0.1,
+              "refute_score": 0.0,
+              "probability": 0.1,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 5,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_021|Disk_io_util",
+                "rows/043/metric/metric_node.parquet#os_021|Sent_queue"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_io_util and Sent_queue may indicate network loss."
+            },
+            {
+              "component": "os_003",
+              "reason_family": "CPU fault",
+              "support_score": 0.1,
+              "refute_score": 0.0,
+              "probability": 0.1,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 6,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_003|Disk_svctm",
+                "rows/043/metric/metric_node.parquet#os_003|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_svctm and Disk_io_util suggest potential CPU fault."
+            },
+            {
+              "component": "os_004",
+              "reason_family": "db connection limit",
+              "support_score": 0.05,
+              "refute_score": 0.0,
+              "probability": 0.05,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 7,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_004|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_io_util may indicate db connection limits."
+            },
+            {
+              "component": "os_005",
+              "reason_family": "network delay",
+              "support_score": 0.05,
+              "refute_score": 0.0,
+              "probability": 0.05,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 8,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_005|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_io_util could suggest network delay."
+            }
+          ],
+          "other_mass": 0.0,
+          "notes": "Distribution based on high severity metrics indicating potential issues."
+        },
+        {
+          "worker_id": "container_metrics",
+          "modality": "metrics",
+          "candidate_scope": [
+            "docker_001",
+            "docker_003",
+            "docker_004",
+            "docker_005",
+            "docker_006",
+            "docker_007"
+          ],
+          "candidates": [
+            {
+              "component": "docker_003",
+              "reason_family": "CPU fault",
+              "support_score": 0.3333,
+              "refute_score": 0.0,
+              "probability": 0.371158,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_003|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "High CPU usage indicates a potential CPU fault."
+            },
+            {
+              "component": "docker_004",
+              "reason_family": "CPU fault",
+              "support_score": 0.0,
+              "refute_score": 0.3333,
+              "probability": 0.371158,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 2,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_004|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "Low CPU usage could indicate an issue, but not a fault."
+            },
+            {
+              "component": "docker_007",
+              "reason_family": "CPU fault",
+              "support_score": 0.125,
+              "refute_score": 0.0,
+              "probability": 0.139198,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 3,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_007|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "High CPU usage suggests a CPU fault."
+            },
+            {
+              "component": "docker_006",
+              "reason_family": "CPU fault",
+              "support_score": 0.0593,
+              "refute_score": 0.0,
+              "probability": 0.066036,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 4,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_006|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "High CPU usage indicates a potential CPU fault."
+            },
+            {
+              "component": "docker_001",
+              "reason_family": "CPU fault",
+              "support_score": 0.0349,
+              "refute_score": 0.0,
+              "probability": 0.038864,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 5,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_001|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "High CPU usage suggests a CPU fault."
+            },
+            {
+              "component": "docker_005",
+              "reason_family": "CPU fault",
+              "support_score": 0.0122,
+              "refute_score": 0.0,
+              "probability": 0.013586,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 6,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_005|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "High CPU usage indicates a potential CPU fault."
+            }
+          ],
+          "other_mass": 0.0,
+          "notes": "All candidates are related to CPU faults based on high usage metrics."
+        },
+        {
+          "worker_id": "service_middleware_metrics",
+          "modality": "metrics",
+          "candidate_scope": [
+            "db_001",
+            "db_002",
+            "db_003",
+            "db_004",
+            "db_005",
+            "db_009",
+            "db_012",
+            "db_013"
+          ],
+          "candidates": [
+            {
+              "component": "db_002",
+              "reason_family": "CPU fault",
+              "support_score": 0.4,
+              "refute_score": 0.0,
+              "probability": 0.4,
+              "modality": "metrics",
+              "worker_id": "service_middleware_metrics",
+              "shard_id": "service_middleware_metrics",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/metric/metric_service.parquet#db_002|Logic_Read_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_002|Physical_Read_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_002|SeqRead_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_002|Login_Per_Sec"
+              ],
+              "missing_evidence": [],
+              "rationale": "High metrics indicate potential CPU issues."
+            },
+            {
+              "component": "db_003",
+              "reason_family": "db connection limit",
+              "support_score": 0.3,
+              "refute_score": 0.0,
+              "probability": 0.3,
+              "modality": "metrics",
+              "worker_id": "service_middleware_metrics",
+              "shard_id": "service_middleware_metrics",
+              "local_rank": 2,
+              "evidence": [
+                "rows/043/metric/metric_service.parquet#db_003|DbTime",
+                "rows/043/metric/metric_service.parquet#db_003|Sess_Active",
+                "rows/043/metric/metric_service.parquet#db_003|Session_pct",
+                "rows/043/metric/metric_service.parquet#db_003|SeqRead_Per_Sec"
+              ],
+              "missing_evidence": [],
+              "rationale": "High DbTime and active sessions suggest connection limits may be reached."
+            },
+            {
+              "component": "db_009",
+              "reason_family": "network delay",
+              "support_score": 0.2,
+              "refute_score": 0.0,
+              "probability": 0.2,
+              "modality": "metrics",
+              "worker_id": "service_middleware_metrics",
+              "shard_id": "service_middleware_metrics",
+              "local_rank": 3,
+              "evidence": [
+                "rows/043/metric/metric_service.parquet#db_009|Redo_Per_Sec"
+              ],
+              "missing_evidence": [],
+              "rationale": "High redo rates can indicate network issues."
+            },
+            {
+              "component": "db_005",
+              "reason_family": "db close",
+              "support_score": 0.1,
+              "refute_score": 0.0,
+              "probability": 0.1,
+              "modality": "metrics",
+              "worker_id": "service_middleware_metrics",
+              "shard_id": "service_middleware_metrics",
+              "local_rank": 4,
+              "evidence": [
+                "rows/043/metric/metric_service.parquet#db_005|LFSync_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_005|DFParaWrite_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_005|SeqRead_Per_Sec"
+              ],
+              "missing_evidence": [],
+              "rationale": "Metrics suggest potential issues with database closure."
+            }
+          ],
+          "other_mass": 0.0,
+          "notes": "Distribution based on high severity metrics."
+        },
+        {
+          "worker_id": "application_symptoms",
+          "modality": "metrics",
+          "candidate_scope": [],
+          "candidates": [],
+          "other_mass": 1.0,
+          "notes": "deterministic fallback with no scoped candidate evidence"
+        },
+        {
+          "worker_id": "trace_dependencies",
+          "modality": "traces",
+          "candidate_scope": [
+            "docker_001",
+            "docker_002",
+            "docker_003",
+            "docker_004",
+            "os_021",
+            "os_022"
+          ],
+          "candidates": [
+            {
+              "component": "os_022",
+              "reason_family": "CPU fault",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.277778,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=115",
+                "rows/043/trace_summary.parquet#row=114"
+              ],
+              "missing_evidence": [],
+              "rationale": "High latency signals from os_022 suggest a CPU fault."
+            },
+            {
+              "component": "docker_002",
+              "reason_family": "network delay",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.222222,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 2,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=17"
+              ],
+              "missing_evidence": [],
+              "rationale": "High latency in docker_002 indicates potential network delay."
+            },
+            {
+              "component": "docker_001",
+              "reason_family": "network loss",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.166667,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 3,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=0"
+              ],
+              "missing_evidence": [],
+              "rationale": "High latency in docker_001 may suggest network loss."
+            },
+            {
+              "component": "os_021",
+              "reason_family": "db connection limit",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.111111,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 4,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=113",
+                "rows/043/trace_summary.parquet#row=112"
+              ],
+              "missing_evidence": [],
+              "rationale": "Latency in os_021 could be due to db connection limits."
+            },
+            {
+              "component": "docker_003",
+              "reason_family": "db close",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.111111,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 5,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=34"
+              ],
+              "missing_evidence": [],
+              "rationale": "High latency in docker_003 may indicate issues with db close."
+            },
+            {
+              "component": "docker_004",
+              "reason_family": "network delay",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.055556,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 6,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=51"
+              ],
+              "missing_evidence": [],
+              "rationale": "Latency in docker_004 suggests possible network delay."
+            },
+            {
+              "component": "docker_002",
+              "reason_family": "db connection limit",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.055556,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 7,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=33"
+              ],
+              "missing_evidence": [],
+              "rationale": "High latency in docker_002 could be due to db connection limits."
+            }
+          ],
+          "other_mass": 0.0,
+          "notes": "Distribution based on latency findings across components."
+        }
+      ],
+      "mas_interaction": {
+        "enabled": true,
+        "diagnostics": {
+          "enabled": true,
+          "rounds": 1,
+          "agent_count": 4,
+          "message_count": 16,
+          "revised_distribution_count": 4
+        },
+        "transcript": [
+          {
+            "round": 0,
+            "from": "node_metrics",
+            "to": "all",
+            "type": "proposal",
+            "modality": "metrics",
+            "candidate": {
+              "component": "os_001",
+              "reason_family": "CPU fault",
+              "support_score": 0.25,
+              "refute_score": 0.0,
+              "probability": 0.25,
+              "modality": "metrics",
+              "worker_id": "node_metrics",
+              "shard_id": "node_metrics",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/metric/metric_node.parquet#os_001|Disk_svctm",
+                "rows/043/metric/metric_node.parquet#os_001|Disk_io_util"
+              ],
+              "missing_evidence": [],
+              "rationale": "High Disk_svctm and Disk_io_util indicate potential CPU fault."
+            },
+            "other_mass": 0.0
+          },
+          {
+            "round": 0,
+            "from": "container_metrics",
+            "to": "all",
+            "type": "proposal",
+            "modality": "metrics",
+            "candidate": {
+              "component": "docker_003",
+              "reason_family": "CPU fault",
+              "support_score": 0.3333,
+              "refute_score": 0.0,
+              "probability": 0.371158,
+              "modality": "metrics",
+              "worker_id": "container_metrics",
+              "shard_id": "container_metrics",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_003|container_cpu_used"
+              ],
+              "missing_evidence": [],
+              "rationale": "High CPU usage indicates a potential CPU fault."
+            },
+            "other_mass": 0.0
+          },
+          {
+            "round": 0,
+            "from": "service_middleware_metrics",
+            "to": "all",
+            "type": "proposal",
+            "modality": "metrics",
+            "candidate": {
+              "component": "db_002",
+              "reason_family": "CPU fault",
+              "support_score": 0.4,
+              "refute_score": 0.0,
+              "probability": 0.4,
+              "modality": "metrics",
+              "worker_id": "service_middleware_metrics",
+              "shard_id": "service_middleware_metrics",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/metric/metric_service.parquet#db_002|Logic_Read_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_002|Physical_Read_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_002|SeqRead_Per_Sec",
+                "rows/043/metric/metric_service.parquet#db_002|Login_Per_Sec"
+              ],
+              "missing_evidence": [],
+              "rationale": "High metrics indicate potential CPU issues."
+            },
+            "other_mass": 0.0
+          },
+          {
+            "round": 0,
+            "from": "trace_dependencies",
+            "to": "all",
+            "type": "proposal",
+            "modality": "traces",
+            "candidate": {
+              "component": "os_022",
+              "reason_family": "CPU fault",
+              "support_score": 0.0,
+              "refute_score": 0.0,
+              "probability": 0.277778,
+              "modality": "traces",
+              "worker_id": "trace_dependencies",
+              "shard_id": "trace_dependencies",
+              "local_rank": 1,
+              "evidence": [
+                "rows/043/trace_summary.parquet#row=115",
+                "rows/043/trace_summary.parquet#row=114"
+              ],
+              "missing_evidence": [],
+              "rationale": "High latency signals from os_022 suggest a CPU fault."
+            },
+            "other_mass": 0.0
+          },
+          {
+            "round": 1,
+            "from": "node_metrics",
+            "to": "container_metrics",
+            "type": "peer_review",
+            "verdict": "abstain",
+            "component": "docker_003",
+            "reason": "CPU fault"
+          },
+          {
+            "round": 1,
+            "from": "node_metrics",
+            "to": "service_middleware_metrics",
+            "type": "peer_review",
+            "verdict": "abstain",
+            "component": "db_002",
+            "reason": "CPU fault"
+          },
+          {
+            "round": 1,
+            "from": "node_metrics",
+            "to": "trace_dependencies",
+            "type": "peer_review",
+            "verdict": "challenge",
+            "component": "os_022",
+            "reason": "CPU fault"
+          },
+          {
+            "round": 1,
+            "from": "container_metrics",
+            "to": "node_metrics",
+            "type": "peer_review",
+            "verdict": "challenge",
+            "component": "os_001",
+            "reason": "CPU fault",
+            "support": 0.0,
+            "refute": 0.0,
+            "evidence_ptrs": [],
+            "rationale": "The evidence provided relates to disk metrics rather than CPU metrics, which may not directly indicate a CPU fault."
+          },
+          {
+            "round": 1,
+            "from": "container_metrics",
+            "to": "service_middleware_metrics",
+            "type": "peer_review",
+            "verdict": "challenge",
+            "component": "db_002",
+            "reason": "CPU fault",
+            "support": 0.0,
+            "refute": 0.0,
+            "evidence_ptrs": [],
+            "rationale": "The metrics provided are related to database performance rather than direct CPU usage, making the connection to CPU faults less clear."
+          },
+          {
+            "round": 1,
+            "from": "container_metrics",
+            "to": "trace_dependencies",
+            "type": "peer_review",
+            "verdict": "challenge",
+            "component": "os_022",
+            "reason": "CPU fault",
+            "support": 0.0,
+            "refute": 0.0,
+            "evidence_ptrs": [],
+            "rationale": "The evidence points to latency signals which may not directly correlate with CPU faults."
+          },
+          {
+            "round": 1,
+            "from": "service_middleware_metrics",
+            "to": "node_metrics",
+            "type": "peer_review",
+            "verdict": "abstain",
+            "component": "os_001",
+            "reason": "CPU fault"
+          },
+          {
+            "round": 1,
+            "from": "service_middleware_metrics",
+            "to": "container_metrics",
+            "type": "peer_review",
+            "verdict": "abstain",
+            "component": "docker_003",
+            "reason": "CPU fault"
+          },
+          {
+            "round": 1,
+            "from": "service_middleware_metrics",
+            "to": "trace_dependencies",
+            "type": "peer_review",
+            "verdict": "abstain",
+            "component": "os_022",
+            "reason": "CPU fault"
+          },
+          {
+            "round": 1,
+            "from": "trace_dependencies",
+            "to": "node_metrics",
+            "type": "peer_review",
+            "verdict": "abstain",
+            "component": "os_001",
+            "reason": "CPU fault"
+          },
+          {
+            "round": 1,
+            "from": "trace_dependencies",
+            "to": "container_metrics",
+            "type": "peer_review",
+            "verdict": "challenge",
+            "component": "docker_003",
+            "reason": "CPU fault"
+          },
+          {
+            "round": 1,
+            "from": "trace_dependencies",
+            "to": "service_middleware_metrics",
+            "type": "peer_review",
+            "verdict": "abstain",
+            "component": "db_002",
+            "reason": "CPU fault"
+          }
+        ]
+      },
+      "worker_diagnostics": [
+        {
+          "worker_id": "application_symptoms",
+          "fallback": true,
+          "validation_errors": [
+            "invalid candidate osb_001|CPU fault",
+            "invalid candidate osb_001|network delay",
+            "invalid candidate osb_001|network loss",
+            "invalid candidate osb_001|db connection limit",
+            "invalid candidate osb_001|db close",
+            "empty distribution"
+          ]
+        },
+        {
+          "worker_id": "container_metrics",
+          "fallback": false,
+          "validation_errors": []
+        },
+        {
+          "worker_id": "node_metrics",
+          "fallback": false,
+          "validation_errors": []
+        },
+        {
+          "worker_id": "service_middleware_metrics",
+          "fallback": false,
+          "validation_errors": []
+        },
+        {
+          "worker_id": "trace_dependencies",
+          "fallback": true,
+          "validation_errors": [
+            "invalid candidate docker_003|db close"
+          ]
+        }
+      ],
+      "round_1": [
+        {
+          "component": "docker_003",
+          "reason": "CPU fault",
+          "occurrence_time": "1590777840031",
+          "confidence": 0.3939,
+          "score": 0.3939,
+          "evidence": [
+            "rows/043/metric/metric_container.parquet#docker_003|container_cpu_used"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.393947; explicit_supporters=container_metrics,trace_dependencies."
+        },
+        {
+          "component": "docker_004",
+          "reason": "CPU fault",
+          "occurrence_time": "1590778100196",
+          "confidence": 0.0673,
+          "score": 0.0673,
+          "evidence": [
+            "rows/043/metric/metric_container.parquet#docker_004|container_cpu_used"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.067340; explicit_supporters=container_metrics."
+        },
+        {
+          "component": "db_002",
+          "reason": "CPU fault",
+          "occurrence_time": "1590778168000.0",
+          "confidence": 0.0672,
+          "score": 0.0672,
+          "evidence": [
+            "rows/043/metric/metric_service.parquet#db_002|Logic_Read_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|Physical_Read_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|SeqRead_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|Login_Per_Sec"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.067212; explicit_supporters=service_middleware_metrics."
+        },
+        {
+          "component": "db_003",
+          "reason": "db connection limit",
+          "occurrence_time": "1590777509000.0",
+          "confidence": 0.0504,
+          "score": 0.0504,
+          "evidence": [
+            "rows/043/metric/metric_service.parquet#db_003|DbTime",
+            "rows/043/metric/metric_service.parquet#db_003|Sess_Active",
+            "rows/043/metric/metric_service.parquet#db_003|Session_pct",
+            "rows/043/metric/metric_service.parquet#db_003|SeqRead_Per_Sec"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.050409; explicit_supporters=service_middleware_metrics."
+        },
+        {
+          "component": "os_001",
+          "reason": "CPU fault",
+          "occurrence_time": "1590778326000.0",
+          "confidence": 0.042,
+          "score": 0.042,
+          "evidence": [
+            "rows/043/metric/metric_node.parquet#os_001|Disk_svctm",
+            "rows/043/metric/metric_node.parquet#os_001|Disk_io_util"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.042007; explicit_supporters=node_metrics."
+        },
+        {
+          "component": "docker_002",
+          "reason": "network delay",
+          "occurrence_time": "1590777958806",
+          "confidence": 0.0362,
+          "score": 0.0362,
+          "evidence": [
+            "rows/043/trace_summary.parquet#row=17"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.036246; explicit_supporters=trace_dependencies."
+        },
+        {
+          "component": "db_009",
+          "reason": "network delay",
+          "occurrence_time": "1590778648000.0",
+          "confidence": 0.0336,
+          "score": 0.0336,
+          "evidence": [
+            "rows/043/metric/metric_service.parquet#db_009|Redo_Per_Sec"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.033606; explicit_supporters=service_middleware_metrics."
+        },
+        {
+          "component": "os_022",
+          "reason": "network delay",
+          "occurrence_time": "1590777891000.0",
+          "confidence": 0.0328,
+          "score": 0.0328,
+          "evidence": [
+            "rows/043/metric/metric_node.parquet#os_022|Received_queue",
+            "rows/043/metric/metric_node.parquet#os_022|Disk_io_util"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.032842; explicit_supporters=node_metrics."
+        }
+      ],
+      "round_2": [
+        {
+          "component": "db_002",
+          "reason": "CPU fault",
+          "occurrence_time": "1590778168000.0",
+          "confidence": 0.1247,
+          "score": 0.1247,
+          "evidence": [
+            "rows/043/metric/metric_service.parquet#db_002|Logic_Read_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|Physical_Read_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|SeqRead_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|Login_Per_Sec"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.124698; explicit_supporters=service_middleware_metrics."
+        },
+        {
+          "component": "db_003",
+          "reason": "db connection limit",
+          "occurrence_time": "1590777509000.0",
+          "confidence": 0.0935,
+          "score": 0.0935,
+          "evidence": [
+            "rows/043/metric/metric_service.parquet#db_003|DbTime",
+            "rows/043/metric/metric_service.parquet#db_003|Sess_Active",
+            "rows/043/metric/metric_service.parquet#db_003|Session_pct",
+            "rows/043/metric/metric_service.parquet#db_003|SeqRead_Per_Sec"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.093524; explicit_supporters=service_middleware_metrics."
+        },
+        {
+          "component": "os_001",
+          "reason": "CPU fault",
+          "occurrence_time": "1590778326000.0",
+          "confidence": 0.0779,
+          "score": 0.0779,
+          "evidence": [
+            "rows/043/metric/metric_node.parquet#os_001|Disk_svctm",
+            "rows/043/metric/metric_node.parquet#os_001|Disk_io_util"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.077937; explicit_supporters=node_metrics."
+        },
+        {
+          "component": "docker_002",
+          "reason": "network delay",
+          "occurrence_time": "1590777958806",
+          "confidence": 0.0672,
+          "score": 0.0672,
+          "evidence": [
+            "rows/043/trace_summary.parquet#row=17"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.067248; explicit_supporters=trace_dependencies."
+        },
+        {
+          "component": "db_009",
+          "reason": "network delay",
+          "occurrence_time": "1590778648000.0",
+          "confidence": 0.0623,
+          "score": 0.0623,
+          "evidence": [
+            "rows/043/metric/metric_service.parquet#db_009|Redo_Per_Sec"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.062349; explicit_supporters=service_middleware_metrics."
+        },
+        {
+          "component": "os_022",
+          "reason": "network delay",
+          "occurrence_time": "1590777891000.0",
+          "confidence": 0.0609,
+          "score": 0.0609,
+          "evidence": [
+            "rows/043/metric/metric_node.parquet#os_022|Received_queue",
+            "rows/043/metric/metric_node.parquet#os_022|Disk_io_util"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.060932; explicit_supporters=node_metrics."
+        },
+        {
+          "component": "docker_007",
+          "reason": "CPU fault",
+          "occurrence_time": "1590778593000.0",
+          "confidence": 0.0484,
+          "score": 0.0484,
+          "evidence": [
+            "rows/043/metric/metric_container.parquet#docker_007|container_cpu_used"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.048376; explicit_supporters=container_metrics."
+        },
+        {
+          "component": "os_002",
+          "reason": "db connection limit",
+          "occurrence_time": "1590778241000.0",
+          "confidence": 0.0468,
+          "score": 0.0468,
+          "evidence": [
+            "rows/043/metric/metric_node.parquet#os_002|Disk_io_util"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.046762; explicit_supporters=node_metrics."
+        }
+      ],
+      "refinement": {
+        "triggered": true,
+        "reason": "low margin or cross-worker conflict",
+        "margin": 0.326607,
+        "conflict": {
+          "conflict": true,
+          "top_components": [
+            "os_001",
+            "docker_003",
+            "db_002",
+            "os_022"
+          ],
+          "unique_top_components": [
+            "db_002",
+            "docker_003",
+            "os_001",
+            "os_022"
+          ]
+        },
+        "requests": [
+          {
+            "worker_id": "container_metrics",
+            "question": "Re-check evidence separating docker_003 from docker_004."
+          },
+          {
+            "worker_id": "trace_dependencies",
+            "question": "Re-check evidence separating docker_003 from docker_004."
+          }
+        ],
+        "checks": {
+          "top": {
+            "candidate": {
+              "component": "docker_003",
+              "reason": "CPU fault",
+              "occurrence_time": "1590777840031",
+              "confidence": 0.3939,
+              "score": 0.3939,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_003|container_cpu_used"
+              ],
+              "rationale": "Equal-weight product-of-experts posterior=0.393947; explicit_supporters=container_metrics,trace_dependencies."
+            },
+            "status": "REFUTED",
+            "support_score": 20.264474,
+            "refute_score": 39.862281,
+            "evidence_ptrs": [
+              "rows/043/trace_summary.parquet#row=34",
+              "rows/043/trace_summary.parquet#row=39",
+              "rows/043/trace_summary.parquet#row=50",
+              "rows/043/metric/metric_container.parquet#docker_003|container_cpu_used"
+            ],
+            "counter_evidence_ptrs": [
+              "rows/043/trace_summary.parquet#row=34",
+              "rows/043/trace_summary.parquet#row=39",
+              "rows/043/trace_summary.parquet#row=50"
+            ]
+          },
+          "runner_up": {
+            "candidate": {
+              "component": "docker_004",
+              "reason": "CPU fault",
+              "occurrence_time": "1590778100196",
+              "confidence": 0.0673,
+              "score": 0.0673,
+              "evidence": [
+                "rows/043/metric/metric_container.parquet#docker_004|container_cpu_used"
+              ],
+              "rationale": "Equal-weight product-of-experts posterior=0.067340; explicit_supporters=container_metrics."
+            },
+            "status": "REFUTED",
+            "support_score": 19.211473,
+            "refute_score": 37.756278,
+            "evidence_ptrs": [
+              "rows/043/trace_summary.parquet#row=51",
+              "rows/043/trace_summary.parquet#row=56",
+              "rows/043/trace_summary.parquet#row=67",
+              "rows/043/metric/metric_container.parquet#docker_004|container_cpu_used"
+            ],
+            "counter_evidence_ptrs": [
+              "rows/043/trace_summary.parquet#row=51",
+              "rows/043/trace_summary.parquet#row=56",
+              "rows/043/trace_summary.parquet#row=67"
+            ]
+          }
+        }
+      },
+      "topology": {
+        "enabled": true,
+        "edge_count": 12,
+        "symptomatic_components": [
+          "db_001",
+          "db_002",
+          "db_003",
+          "db_004",
+          "db_005",
+          "db_009",
+          "db_012",
+          "docker_001",
+          "docker_002",
+          "docker_003",
+          "docker_004",
+          "os_001",
+          "os_002",
+          "os_003",
+          "os_010",
+          "os_011",
+          "os_012",
+          "os_021",
+          "os_022",
+          "redis_008"
+        ],
+        "edges": [
+          [
+            "docker_004",
+            "docker_006"
+          ],
+          [
+            "docker_003",
+            "docker_005"
+          ],
+          [
+            "docker_001",
+            "docker_007"
+          ],
+          [
+            "docker_001",
+            "docker_008"
+          ],
+          [
+            "docker_002",
+            "docker_008"
+          ],
+          [
+            "docker_003",
+            "docker_006"
+          ],
+          [
+            "docker_002",
+            "docker_007"
+          ],
+          [
+            "docker_004",
+            "docker_005"
+          ],
+          [
+            "os_022",
+            "docker_001"
+          ],
+          [
+            "os_021",
+            "docker_003"
+          ],
+          [
+            "os_021",
+            "docker_004"
+          ],
+          [
+            "os_022",
+            "docker_002"
+          ]
+        ],
+        "gamma": 0.0,
+        "temporal_beta": 0.0
+      },
+      "fusion_candidates": [
+        {
+          "component": "db_002",
+          "reason": "CPU fault",
+          "occurrence_time": "1590778168000.0",
+          "confidence": 0.1247,
+          "score": 0.1247,
+          "evidence": [
+            "rows/043/metric/metric_service.parquet#db_002|Logic_Read_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|Physical_Read_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|SeqRead_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|Login_Per_Sec"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.124698; explicit_supporters=service_middleware_metrics."
+        },
+        {
+          "component": "db_003",
+          "reason": "db connection limit",
+          "occurrence_time": "1590777509000.0",
+          "confidence": 0.0935,
+          "score": 0.0935,
+          "evidence": [
+            "rows/043/metric/metric_service.parquet#db_003|DbTime",
+            "rows/043/metric/metric_service.parquet#db_003|Sess_Active",
+            "rows/043/metric/metric_service.parquet#db_003|Session_pct",
+            "rows/043/metric/metric_service.parquet#db_003|SeqRead_Per_Sec"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.093524; explicit_supporters=service_middleware_metrics."
+        },
+        {
+          "component": "os_001",
+          "reason": "CPU fault",
+          "occurrence_time": "1590778326000.0",
+          "confidence": 0.0779,
+          "score": 0.0779,
+          "evidence": [
+            "rows/043/metric/metric_node.parquet#os_001|Disk_svctm",
+            "rows/043/metric/metric_node.parquet#os_001|Disk_io_util"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.077937; explicit_supporters=node_metrics."
+        },
+        {
+          "component": "docker_002",
+          "reason": "network delay",
+          "occurrence_time": "1590777958806",
+          "confidence": 0.0672,
+          "score": 0.0672,
+          "evidence": [
+            "rows/043/trace_summary.parquet#row=17"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.067248; explicit_supporters=trace_dependencies."
+        },
+        {
+          "component": "db_009",
+          "reason": "network delay",
+          "occurrence_time": "1590778648000.0",
+          "confidence": 0.0623,
+          "score": 0.0623,
+          "evidence": [
+            "rows/043/metric/metric_service.parquet#db_009|Redo_Per_Sec"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.062349; explicit_supporters=service_middleware_metrics."
+        },
+        {
+          "component": "os_022",
+          "reason": "network delay",
+          "occurrence_time": "1590777891000.0",
+          "confidence": 0.0609,
+          "score": 0.0609,
+          "evidence": [
+            "rows/043/metric/metric_node.parquet#os_022|Received_queue",
+            "rows/043/metric/metric_node.parquet#os_022|Disk_io_util"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.060932; explicit_supporters=node_metrics."
+        },
+        {
+          "component": "docker_007",
+          "reason": "CPU fault",
+          "occurrence_time": "1590778593000.0",
+          "confidence": 0.0484,
+          "score": 0.0484,
+          "evidence": [
+            "rows/043/metric/metric_container.parquet#docker_007|container_cpu_used"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.048376; explicit_supporters=container_metrics."
+        },
+        {
+          "component": "os_002",
+          "reason": "db connection limit",
+          "occurrence_time": "1590778241000.0",
+          "confidence": 0.0468,
+          "score": 0.0468,
+          "evidence": [
+            "rows/043/metric/metric_node.parquet#os_002|Disk_io_util"
+          ],
+          "rationale": "Equal-weight product-of-experts posterior=0.046762; explicit_supporters=node_metrics."
+        }
+      ],
+      "pre_falsifier_winner": {
+        "component": "db_002",
+        "reason": "CPU fault",
+        "occurrence_time": "1590778168000.0",
+        "confidence": 0.1247,
+        "score": 0.1247,
+        "evidence": [
+          "rows/043/metric/metric_service.parquet#db_002|Logic_Read_Per_Sec",
+          "rows/043/metric/metric_service.parquet#db_002|Physical_Read_Per_Sec",
+          "rows/043/metric/metric_service.parquet#db_002|SeqRead_Per_Sec",
+          "rows/043/metric/metric_service.parquet#db_002|Login_Per_Sec"
+        ],
+        "rationale": "Equal-weight product-of-experts posterior=0.124698; explicit_supporters=service_middleware_metrics."
+      },
+      "falsifier": {
+        "selected": "top",
+        "top_status": "SUPPORTED",
+        "runner_up_status": "SUPPORTED",
+        "top": {
+          "candidate": {
+            "component": "db_002",
+            "reason": "CPU fault",
+            "occurrence_time": "1590778168000.0",
+            "confidence": 0.1247,
+            "score": 0.1247,
+            "evidence": [
+              "rows/043/metric/metric_service.parquet#db_002|Logic_Read_Per_Sec",
+              "rows/043/metric/metric_service.parquet#db_002|Physical_Read_Per_Sec",
+              "rows/043/metric/metric_service.parquet#db_002|SeqRead_Per_Sec",
+              "rows/043/metric/metric_service.parquet#db_002|Login_Per_Sec"
+            ],
+            "rationale": "Equal-weight product-of-experts posterior=0.124698; explicit_supporters=service_middleware_metrics."
+          },
+          "status": "SUPPORTED",
+          "support_score": 47.351763,
+          "refute_score": 0.678571,
+          "evidence_ptrs": [
+            "rows/043/metric/metric_service.parquet#db_002|Logic_Read_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|Physical_Read_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|SeqRead_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_002|Login_Per_Sec"
+          ],
+          "counter_evidence_ptrs": [
+            "rows/043/metric/metric_service.parquet#db_002|Login_Per_Sec"
+          ]
+        },
+        "runner_up": {
+          "candidate": {
+            "component": "db_003",
+            "reason": "db connection limit",
+            "occurrence_time": "1590777509000.0",
+            "confidence": 0.0935,
+            "score": 0.0935,
+            "evidence": [
+              "rows/043/metric/metric_service.parquet#db_003|DbTime",
+              "rows/043/metric/metric_service.parquet#db_003|Sess_Active",
+              "rows/043/metric/metric_service.parquet#db_003|Session_pct",
+              "rows/043/metric/metric_service.parquet#db_003|SeqRead_Per_Sec"
+            ],
+            "rationale": "Equal-weight product-of-experts posterior=0.093524; explicit_supporters=service_middleware_metrics."
+          },
+          "status": "SUPPORTED",
+          "support_score": 17.974914,
+          "refute_score": 5.364492,
+          "evidence_ptrs": [
+            "rows/043/metric/metric_service.parquet#db_003|DbTime",
+            "rows/043/metric/metric_service.parquet#db_003|Sess_Active",
+            "rows/043/metric/metric_service.parquet#db_003|Session_pct",
+            "rows/043/metric/metric_service.parquet#db_003|SeqRead_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_003|LFSync_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_003|Call_Per_Sec",
+            "rows/043/metric/metric_service.parquet#db_003|TPS_Per_Sec"
+          ],
+          "counter_evidence_ptrs": [
+            "rows/043/metric/metric_service.parquet#db_003|DbTime"
+          ]
+        },
+        "rationale": "The top candidate (db_002) has a higher confidence score and is explicitly supported by telemetry evidence, indicating a stronger basis for the CPU fault diagnosis."
+      },
+      "fusion": "correlation_aware_log_opinion_pool",
+      "fusion_weights": {
+        "version": "default_v0",
+        "fit_on": "none (historical constants, not fitted)",
+        "provenance": "",
+        "correlation_rho": 0.0,
+        "temperature": 1.0,
+        "modality_reliability_enabled": false,
+        "topology_gamma": 0.0,
+        "temporal_beta": 0.0,
+        "convergence_modality_bonus": 0.18,
+        "convergence_shard_bonus": 0.05,
+        "modality_weights": {
+          "metrics": 1.0,
+          "logs": 1.15,
+          "traces": 1.15,
+          "events": 1.05,
+          "auxiliary": 0.8
+        }
+      }
+    },
+    "volume_bin": "middle"
+  }
+}

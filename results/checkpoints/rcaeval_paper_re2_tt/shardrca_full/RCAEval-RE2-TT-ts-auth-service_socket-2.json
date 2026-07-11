@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_socket-2",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-auth-service",
+  "ranked_roots": [
+    "ts-auth-service",
+    "ts-payment-service",
+    "ts-admin-basic-info-service",
+    "ts-order-other-service",
+    "ts-inside-payment-service",
+    "ts-price-service",
+    "ts-order-service",
+    "ts-assurance-service",
+    "ts-food-service",
+    "ts-contacts-service"
+  ],
+  "fault_type": "cpu",
+  "accepted": true,
+  "confidence": 0.95,
+  "latency_s": 173.34,
+  "total_tokens": 280966,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-auth-service; no promotion."
+}

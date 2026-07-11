@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_mem-1",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-order-service",
+  "ranked_roots": [
+    "ts-order-service",
+    "ts-preserve-other-service",
+    "ts-security-service",
+    "ts-consign-price-service",
+    "ts-station-service",
+    "ts-consign-service",
+    "ts-user-service",
+    "ts-food-service",
+    "ts-seat-service",
+    "ts-assurance-service"
+  ],
+  "fault_type": "db",
+  "accepted": true,
+  "confidence": 0.5429386885261562,
+  "latency_s": 180.1,
+  "total_tokens": 300574,
+  "tool_calls": 37,
+  "llm_calls": 35,
+  "notes": "Targeted evidence supports ts-order-service; no promotion."
+}

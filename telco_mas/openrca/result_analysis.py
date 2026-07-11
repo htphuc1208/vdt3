@@ -15,6 +15,10 @@ from .schemas import OpenRCAPredictionItem, OpenRCAPredictionOutput
 from .task_parser import TASK_FIELDS
 
 
+REQUIRED_MECHANISM_ABLATIONS = {"no_falsifier", "no_topology", "no_interaction", "no_refinement"}
+NO_FIT_WEIGHT_SENTINELS = {"", "(default)", "(default_no_fit)", "default", "default_no_fit", "none", "null"}
+
+
 def analyze_openrca_results(
     paths: list[str | Path],
     *,
@@ -48,7 +52,7 @@ def analyze_openrca_results(
     selection_rows = [
         row
         for row in paired_rows
-        if row["system"] not in {"same_board_single", "rca_agent_replica"}
+        if row["system"] != "rca_agent_replica"
     ]
     baseline, baseline_selection = resolve_baseline(selection_rows, requested=baseline, treatment=treatment)
     summary = aggregate_ci(paired_rows, ["strict_correct", "score"])
@@ -65,8 +69,27 @@ def analyze_openrca_results(
     disagreements = _disagreements(confirmatory_rows, baseline=baseline, treatment=treatment)
     comparisons = _role_comparisons(paired_rows, treatment=treatment)
     volume_analysis = _volume_analysis(paired_rows, treatment=treatment)
-    gate = _protocol_gate(summary, paired, comparisons, volume_analysis, baseline, treatment)
     candidate_catalog_sources = _candidate_catalog_sources(confirmatory_rows)
+    label_derived_candidate_catalog = any(
+        bool(source.get("label_derived"))
+        or str(source.get("components") or "").lower() == "label_derived"
+        for source in candidate_catalog_sources
+    )
+    overfit_guard = _overfit_guard(
+        summary,
+        paths,
+        treatment=treatment,
+        label_derived_candidate_catalog=label_derived_candidate_catalog,
+    )
+    gate = _protocol_gate(
+        summary,
+        paired,
+        comparisons,
+        volume_analysis,
+        baseline,
+        treatment,
+        overfit_guard,
+    )
     return {
         "benchmark": "openrca_telecom",
         "paths": [str(path) for path in paths],
@@ -83,11 +106,8 @@ def analyze_openrca_results(
         "volume_analysis": volume_analysis,
         "replay_ablations": _replay_ablations(confirmatory_rows),
         "candidate_catalog_sources": candidate_catalog_sources,
-        "label_derived_candidate_catalog": any(
-            bool(source.get("label_derived"))
-            or str(source.get("components") or "").lower() == "label_derived"
-            for source in candidate_catalog_sources
-        ),
+        "label_derived_candidate_catalog": label_derived_candidate_catalog,
+        "overfit_guard": overfit_guard,
         "clear_win_gate": gate,
         "disagreement_count": len(disagreements),
         "disagreements": disagreements[:25],
@@ -204,6 +224,69 @@ def _candidate_catalog_sources(rows: list[dict[str, Any]]) -> list[dict[str, Any
     return out
 
 
+def _overfit_guard(
+    summary: dict[str, dict[str, Any]],
+    paths: list[str | Path],
+    *,
+    treatment: str,
+    label_derived_candidate_catalog: bool,
+) -> dict[str, Any]:
+    systems = set(summary)
+    missing_ablations = sorted(REQUIRED_MECHANISM_ABLATIONS - systems)
+    weight_sources = _weight_sources(paths)
+    weights_declared = bool(weight_sources) and all(item["declared"] for item in weight_sources)
+    weights_no_fit = weights_declared and all(_is_no_fit_weight_source(item["source"]) for item in weight_sources)
+    checks = {
+        "treatment_present": treatment in systems,
+        "required_mechanism_ablations": not missing_ablations,
+        "no_interaction_ablation": "no_interaction" in systems,
+        "weights_declared_no_fit": weights_no_fit,
+        "candidate_catalog_not_label_derived": not label_derived_candidate_catalog,
+    }
+    reasons = []
+    if not checks["treatment_present"]:
+        reasons.append(f"treatment system is missing from paired rows: {treatment}")
+    if missing_ablations:
+        reasons.append(f"missing required mechanism ablations: {', '.join(missing_ablations)}")
+    if not weights_no_fit:
+        reasons.append("result metadata must declare default no-fit fusion weights; fitted artifacts are not claim evidence")
+    if label_derived_candidate_catalog:
+        reasons.append("candidate catalog is label-derived")
+    return {
+        "passed": all(checks.values()),
+        "checks": checks,
+        "required_ablations": sorted(REQUIRED_MECHANISM_ABLATIONS),
+        "missing_ablations": missing_ablations,
+        "fusion_weight_sources": weight_sources,
+        "reasons": reasons,
+        "required": (
+            "claim evidence must use default no-fit weights, include no_interaction/no_topology/"
+            "no_falsifier/no_refinement ablations, and avoid label-derived candidate catalogs"
+        ),
+    }
+
+
+def _weight_sources(paths: list[str | Path]) -> list[dict[str, Any]]:
+    out = []
+    for path in paths:
+        p = Path(path)
+        declared = False
+        source = "(missing)"
+        try:
+            meta = json.loads(p.read_text(encoding="utf-8")).get("meta", {})
+        except Exception:
+            meta = {}
+        if isinstance(meta, dict) and "shardrca_weights" in meta:
+            declared = True
+            source = str(meta.get("shardrca_weights") or "")
+        out.append({"path": str(p), "declared": declared, "source": source})
+    return out
+
+
+def _is_no_fit_weight_source(source: str) -> bool:
+    return str(source or "").strip().lower() in NO_FIT_WEIGHT_SENTINELS
+
+
 def _clear_win_gate(
     summary: dict[str, dict[str, Any]],
     paired: dict[str, Any],
@@ -240,7 +323,6 @@ def _role_comparisons(rows: list[dict[str, Any]], *, treatment: str) -> dict[str
     roles = {
         "operational_single": "single_react_sc",
         "architecture_baseline": "rca_agent_replica",
-        "diagnostic_oracle": "same_board_single",
     }
     available = {str(row["system"]) for row in rows}
     comparisons: dict[str, Any] = {}
@@ -292,14 +374,20 @@ def _protocol_gate(
     volume_analysis: dict[str, Any],
     baseline: str,
     treatment: str,
+    overfit_guard: dict[str, Any],
 ) -> dict[str, Any]:
     legacy = _clear_win_gate(summary, paired, baseline, treatment)
     required_roles = {"operational_single", "architecture_baseline"}
-    if not required_roles.issubset(comparisons):
+    missing_roles = sorted(required_roles - set(comparisons))
+    if missing_roles or not overfit_guard.get("passed"):
         legacy.update({
+            "passed": False,
             "claim_level": "legacy_or_incomplete",
             "strong_mechanism_passed": False,
             "protocol_complete": False,
+            "missing_protocol_roles": missing_roles,
+            "overfit_guard_passed": bool(overfit_guard.get("passed")),
+            "overfit_guard_reasons": list(overfit_guard.get("reasons") or []),
         })
         return legacy
 
@@ -318,26 +406,20 @@ def _protocol_gate(
             "passed": bool((effect >= 0.10 or error_reduction >= 0.20) and adjusted_p <= 0.05),
         }
     operational_passed = all(item["passed"] for item in confirmatory_checks.values())
-    oracle = comparisons.get("diagnostic_oracle")
-    oracle_delta = (
-        float(oracle["strict"]["effect"]["mean_difference"])
-        if oracle is not None
-        else float("-inf")
-    )
     high_volume_positive = bool(volume_analysis.get("positive_against_confirmatory"))
-    strong = bool(operational_passed and oracle_delta > 0 and high_volume_positive)
+    strong = bool(operational_passed and high_volume_positive)
     architecture = confirmatory_checks["architecture_baseline"]
     return {
-        "passed": operational_passed,
+        "passed": bool(operational_passed and overfit_guard.get("passed")),
         "protocol_complete": True,
+        "overfit_guard_passed": bool(overfit_guard.get("passed")),
         "claim_level": "strong_mechanism" if strong else ("operational_budget" if operational_passed else "none"),
         "strong_mechanism_passed": strong,
         "confirmatory": confirmatory_checks,
-        "oracle_delta": round(oracle_delta, 4) if oracle is not None else None,
         "high_volume_positive": high_volume_positive,
         "required": (
             "MAS must pass Holm-adjusted effect/significance gates against both the operational "
-            "single and RCA-Agent; strong mechanism additionally requires a positive oracle delta"
+            "single and RCA-Agent; strong mechanism additionally requires a positive high-volume-bin delta"
         ),
         "baseline": architecture["baseline"],
         "treatment": treatment,

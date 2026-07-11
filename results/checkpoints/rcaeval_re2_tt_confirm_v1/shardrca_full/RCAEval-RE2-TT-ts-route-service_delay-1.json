@@ -1,0 +1,32 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-route-service_delay-1",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-consign-mongo",
+  "ranked_roots": [
+    "ts-consign-mongo",
+    "ts-admin-travel-service",
+    "ts-ui-dashboard",
+    "ts-travel2-service",
+    "ts-preserve-service",
+    "ts-route-service",
+    "ts-notification-mongo",
+    "ts-inside-payment-service",
+    "ts-payment-service",
+    "ts-food-service",
+    "ts-order-service",
+    "ts-security-service",
+    "ts-travel-mongo",
+    "ts-seat-service",
+    "ts-travel-service",
+    "ts-station-service",
+    "ts-route-mongo"
+  ],
+  "fault_type": "mem",
+  "accepted": true,
+  "confidence": 0.19868061484491578,
+  "latency_s": 321.17,
+  "total_tokens": 281777,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Runner-up ts-consign-mongo had stronger targeted evidence than ts-route-service; promoted runner-up.; rcaeval_metric_prior=mas_primary_metric_prior_secondary(root=ts-admin-travel-service, margin=0.5947, threshold=0.625)"
+}

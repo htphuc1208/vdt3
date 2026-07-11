@@ -1,0 +1,20 @@
+{
+  "fingerprint": "ac04b6921e3c1ebd59f513fdb8d87bb53721f0671d98e0707e7d5de6f6851238",
+  "row": {
+    "row_id": 30,
+    "task_index": "task_3",
+    "instruction": "There was one failure within the specified time range of May 27, 2020, from 00:30 to 01:00. The exact component responsible for this failure is currently unknown. Please identify the root cause component.",
+    "prediction": "{\"1\": {\"root cause component\": \"os_013\"}}",
+    "scoring_points": "The only predicted root cause component is os_017\n",
+    "passed": "",
+    "failed": "os_017",
+    "score": 0.0,
+    "strict_correct": false,
+    "system": "single_react_sc",
+    "latency_s": 21.71,
+    "total_tokens": 20529,
+    "llm_calls": 9,
+    "tool_calls": 9,
+    "volume_bin": "middle"
+  }
+}

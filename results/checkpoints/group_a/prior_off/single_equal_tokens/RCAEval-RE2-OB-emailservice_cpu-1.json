@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-OB-emailservice_cpu-1",
+  "runtime_case_id": "RE2-OB-cfb0439bef87",
+  "source": "RE2-OB",
+  "system": "single_equal_tokens",
+  "prior": "off",
+  "predicted_root": "emailservice",
+  "true_root": "emailservice",
+  "hit_at_1": 1,
+  "hit_at_3": 1,
+  "mrr": 1.0,
+  "total_tokens": 5276,
+  "llm_calls": 3,
+  "tool_calls": 4,
+  "latency_s": 8.9
+}

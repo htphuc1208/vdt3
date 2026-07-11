@@ -1,12 +1,11 @@
 """Run the frozen fresh-holdout RCAEval-hard confirmatory (prereg_rcaeval_fresh_confirm24_frozen).
 
-Treatment: evidence-isolated MAS (shardrca_full) with the frozen causal re-rank weights.
+Treatment: evidence-isolated MAS (shardrca_full) with default no-fit fusion weights.
 Primary baseline: budgeted single-context ReAct with self-consistency (single_react_sc).
-Boundary control (reported, not gated): same_board_single global-board oracle.
 
 Per-case checkpoints make the run resumable and idempotent. The case list, systems,
-weights, and stopping rule are pinned by the frozen preregistration; this runner only
-executes and scores it.
+and stopping rule are pinned by the frozen preregistration; this runner refuses fitted
+weight artifacts so a confirmatory replay cannot accidentally inherit development tuning.
 """
 from __future__ import annotations
 
@@ -23,7 +22,7 @@ from ..shardrca.hard_split import load_hard_cases_by_runtime_ids
 from ..shardrca.runner import run_rcaeval_case
 
 PREREG = "results/prereg_rcaeval_fresh_confirm24_frozen.json"
-SYSTEMS = ["shardrca_full", "single_react", "single_react_sc", "same_board_single"]
+SYSTEMS = ["shardrca_full", "no_interaction", "single_react", "single_react_sc"]
 
 
 def _checkpoint_path(ckpt_dir: Path, system: str, case_id: str) -> Path:
@@ -58,6 +57,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--checkpoint-dir", default="results/checkpoints/rcaeval_fresh_confirm24")
     parser.add_argument("--systems", default=",".join(SYSTEMS))
     args = parser.parse_args(argv)
+
+    if os.environ.get("SHARDRCA_WEIGHTS"):
+        print(
+            "ERROR: fresh confirmatory runs use default no-fit weights; unset SHARDRCA_WEIGHTS.",
+            flush=True,
+        )
+        return 2
 
     prereg = json.load(open(args.prereg))
     ids = prereg["dataset"]["runtime_case_ids"]
@@ -131,16 +137,21 @@ def main(argv: list[str] | None = None) -> int:
         "relative_error_reduction": rel_err_red,
         "mcnemar": mcnemar,
     }
-
-    # boundary vs oracle (reported, not gated)
-    oracle_boundary = None
-    if "rcaeval_same_board_single" in summary:
-        oracle_boundary = {
-            "note": "global-board oracle boundary; NOT part of the confirmatory gate",
-            "same_board_single_hit_at_1": summary["rcaeval_same_board_single"]["hit_at_1"],
-            "shardrca_full_hit_at_1": t_h1,
-            "mcnemar": paired_mcnemar(rows, "rcaeval_same_board_single", treatment, "hit_at_1"),
-        }
+    overfit_guard = {
+        "passed": bool("no_interaction" in systems),
+        "checks": {
+            "fresh_holdout_prereg": True,
+            "fixed_case_ids": True,
+            "no_fitted_weights": True,
+            "no_interaction_ablation": "no_interaction" in systems,
+            "strongest_single_baseline": baseline == "rcaeval_single_react_sc",
+        },
+        "fusion_weights": "default_no_fit",
+        "required": (
+            "fresh holdout, fixed case IDs, no fitted SHARDRCA_WEIGHTS artifact, "
+            "and an explicit no_interaction ablation"
+        ),
+    }
 
     payload = {
         "meta": {
@@ -149,11 +160,11 @@ def main(argv: list[str] | None = None) -> int:
             "suite": "rcaeval_hard_llm_fresh_confirm",
             "model": settings.model,
             "systems": systems,
-            "shardrca_weights": os.environ.get("SHARDRCA_WEIGHTS", "(default)"),
+            "shardrca_weights": "(default_no_fit)",
         },
         "summary": summary,
         "clear_win_gate": clear_win_gate,
-        "oracle_boundary": oracle_boundary,
+        "overfit_guard": overfit_guard,
         "rows": rows,
     }
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
@@ -164,10 +175,6 @@ def main(argv: list[str] | None = None) -> int:
     print(f"\nCLEAR-WIN GATE (vs {baseline}): passed={clear_win_gate['passed']} "
           f"delta={abs_delta:+.3f} p={mcnemar['p_value_exact']} "
           f"(t_wins={mcnemar['treatment_only_correct']}, b_wins={mcnemar['baseline_only_correct']})")
-    if oracle_boundary:
-        ob = oracle_boundary
-        print(f"ORACLE BOUNDARY: same_board={ob['same_board_single_hit_at_1']:.3f} vs MAS={ob['shardrca_full_hit_at_1']:.3f} "
-              f"p={ob['mcnemar']['p_value_exact']}")
     print(f"\nSaved -> {args.out}", flush=True)
     return 0
 

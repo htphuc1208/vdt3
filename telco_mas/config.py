@@ -23,6 +23,12 @@ def _as_bool(value: str | None, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _as_optional_int(value: str | None) -> int | None:
+    if value is None or not value.strip():
+        return None
+    return int(value)
+
+
 @dataclass(frozen=True)
 class Settings:
     """Immutable view of the current runtime settings."""
@@ -35,6 +41,7 @@ class Settings:
     cache_dir: str
     max_tool_iters: int
     request_timeout: float
+    seed: int | None = None
 
     @property
     def has_api_key(self) -> bool:
@@ -61,4 +68,5 @@ def get_settings() -> Settings:
         cache_dir=os.getenv("TELCO_CACHE_DIR", ".llm_cache"),
         max_tool_iters=int(os.getenv("TELCO_MAX_TOOL_ITERS", "6")),
         request_timeout=float(os.getenv("TELCO_REQUEST_TIMEOUT", "60")),
+        seed=_as_optional_int(os.getenv("TELCO_LLM_SEED")),
     )

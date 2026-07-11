@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_mem-2",
+  "runtime_case_id": "RE2-TT-d86577a46440",
+  "source": "RE2-TT",
+  "system": "single_equal_tokens",
+  "prior": "on",
+  "predicted_root": "ts-admin-travel-service",
+  "true_root": "ts-order-service",
+  "hit_at_1": 0,
+  "hit_at_3": 0,
+  "mrr": 0.0833,
+  "total_tokens": 10867,
+  "llm_calls": 3,
+  "tool_calls": 4,
+  "latency_s": 3.84
+}

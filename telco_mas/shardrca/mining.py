@@ -48,10 +48,26 @@ class _Stats:
 
     @property
     def std(self) -> float:
+        return math.sqrt(self.sample_variance)
+
+    @property
+    def sample_variance(self) -> float:
         if self.count <= 1:
             return 0.0
-        variance = max(0.0, self.sumsq / self.count - self.mean * self.mean)
-        return math.sqrt(variance)
+        numerator = self.sumsq - (self.total * self.total / self.count)
+        return max(0.0, numerator / (self.count - 1))
+
+
+@dataclass(frozen=True)
+class _WelchShift:
+    delta: float
+    t_stat: float
+    df: float
+    p_value: float
+    standard_error: float
+
+
+_MIN_P_VALUE = 1e-300
 
 
 def mine_shard(spec: ShardSpec, *, limit: int | None = 20, chunksize: int = 50_000) -> list[Finding]:
@@ -231,7 +247,14 @@ def mine_log_patterns(
                 score=round(float(score), 6),
                 evidence_ptr=evidence.get((component, template, signal), ""),
                 summary=f"log template count changed pre={pre} post={post}: {template[:120]}",
-                metadata={"template": template, "pre_count": pre, "post_count": post},
+                metadata={
+                    "template": template,
+                    "pre_count": pre,
+                    "post_count": post,
+                    "score_method": "laplace_log_ratio_prior_support",
+                    "laplace_prior_per_window": 1.0,
+                    "support_prior_mass": 2.0,
+                },
             )
         )
 
@@ -265,14 +288,22 @@ def normalise_log_template(message: Any) -> str:
     return text[:300]
 
 
-def _log_count_shift_score(pre: int, post: int, *, prior: float = 1.0, support_tau: float = 10.0) -> float:
-    """Calibrate count shifts without letting raw log volume dominate metrics."""
+def _log_count_shift_score(pre: int, post: int, *, prior: float = 1.0, support_tau: float | None = None) -> float:
+    """Calibrate log-count shifts with Laplace smoothing and prior support.
+
+    ``prior`` is the symmetric Laplace pseudo-count per window. When
+    ``support_tau`` is not supplied, the support shrinkage uses the effective
+    prior sample mass implied by that smoothing (two windows times ``prior``).
+    That keeps one-off template changes from outranking supported shifts without
+    introducing an unrelated free constant.
+    """
 
     total = max(0, pre) + max(0, post)
     if total == 0:
         return 0.0
     log_ratio = abs(math.log((max(0, post) + prior) / (max(0, pre) + prior)))
-    support = math.sqrt(total / (total + support_tau))
+    prior_support = 2.0 * max(0.0, prior) if support_tau is None else max(0.0, support_tau)
+    support = math.sqrt(total / (total + prior_support)) if prior_support > 0 else 1.0
     return log_ratio * support
 
 
@@ -369,15 +400,19 @@ def _stats_to_findings(
     modality: str,
     limit: int | None,
 ) -> list[Finding]:
-    findings: list[Finding] = []
+    tests: list[tuple[tuple[str, str, str], _Stats, _Stats, _WelchShift]] = []
     for key, post_stats in post.items():
         pre_stats = pre.get(key, _Stats())
         if pre_stats.count == 0 or post_stats.count == 0:
             continue
+        tests.append((key, pre_stats, post_stats, _welch_mean_shift(pre_stats, post_stats)))
+
+    q_values = _benjamini_hochberg([shift.p_value for _, _, _, shift in tests])
+    findings: list[Finding] = []
+    for (key, pre_stats, post_stats, shift), q_value in zip(tests, q_values):
         component, signal, source = key
-        delta = post_stats.mean - pre_stats.mean
-        denom = pre_stats.std + abs(pre_stats.mean) * 0.05 + 1e-9
-        score = abs(delta) / denom
+        delta = shift.delta
+        score = _fdr_significance_score(q_value)
         magnitude = abs(delta) / (abs(pre_stats.mean) + 1.0)
         direction = "high" if delta >= 0 else "low"
         findings.append(
@@ -395,20 +430,157 @@ def _stats_to_findings(
                 summary=(
                     f"{signal} shifted {direction}: pre_mean={pre_stats.mean:.4g}, "
                     f"post_mean={post_stats.mean:.4g}, delta={delta:.4g}, "
+                    f"welch_t={shift.t_stat:.4g}, q={q_value:.4g}, "
                     f"pre_n={pre_stats.count}, post_n={post_stats.count}"
                 ),
                 metadata={
                     "source_file": source,
+                    "score_method": "welch_t_bh_fdr_neg_log10_q",
+                    "multiple_testing": "benjamini_hochberg",
                     "pre_mean": pre_stats.mean,
                     "post_mean": post_stats.mean,
                     "pre_std": pre_stats.std,
+                    "post_std": post_stats.std,
                     "pre_n": pre_stats.count,
                     "post_n": post_stats.count,
+                    "delta": delta,
+                    "standard_error": shift.standard_error,
+                    "welch_t": _finite_float_or_none(shift.t_stat),
+                    "welch_t_infinite": not math.isfinite(shift.t_stat),
+                    "welch_df": _finite_float_or_none(shift.df),
+                    "p_value": shift.p_value,
+                    "q_value": q_value,
                 },
             )
         )
     ranked = sorted(findings, key=lambda item: (item.score, item.magnitude), reverse=True)
     return ranked if limit is None else ranked[: max(1, limit)]
+
+
+def _welch_mean_shift(pre_stats: _Stats, post_stats: _Stats) -> _WelchShift:
+    """Two-sample mean-shift test using Welch's unequal-variance statistic."""
+
+    delta = post_stats.mean - pre_stats.mean
+    if pre_stats.count < 2 or post_stats.count < 2:
+        return _WelchShift(delta=delta, t_stat=0.0, df=0.0, p_value=1.0, standard_error=math.inf)
+
+    pre_var = pre_stats.sample_variance
+    post_var = post_stats.sample_variance
+    pre_term = pre_var / pre_stats.count
+    post_term = post_var / post_stats.count
+    se2 = pre_term + post_term
+    if se2 <= 0.0:
+        if abs(delta) <= 0.0:
+            return _WelchShift(delta=delta, t_stat=0.0, df=math.inf, p_value=1.0, standard_error=0.0)
+        signed_inf = math.copysign(math.inf, delta)
+        return _WelchShift(delta=delta, t_stat=signed_inf, df=math.inf, p_value=_MIN_P_VALUE, standard_error=0.0)
+
+    se = math.sqrt(se2)
+    t_stat = delta / se
+    denom = 0.0
+    if pre_stats.count > 1:
+        denom += (pre_term * pre_term) / (pre_stats.count - 1)
+    if post_stats.count > 1:
+        denom += (post_term * post_term) / (post_stats.count - 1)
+    df = (se2 * se2 / denom) if denom > 0.0 else math.inf
+    p_value = _student_t_two_sided_pvalue(abs(t_stat), df)
+    return _WelchShift(delta=delta, t_stat=t_stat, df=df, p_value=p_value, standard_error=se)
+
+
+def _student_t_two_sided_pvalue(t_abs: float, df: float) -> float:
+    if not math.isfinite(t_abs):
+        return _MIN_P_VALUE
+    if t_abs <= 0.0:
+        return 1.0
+    if not math.isfinite(df) or df > 1e7:
+        return max(_MIN_P_VALUE, min(1.0, math.erfc(t_abs / math.sqrt(2.0))))
+    if df <= 0.0:
+        return 1.0
+    x = df / (df + t_abs * t_abs)
+    return max(_MIN_P_VALUE, min(1.0, _regularized_incomplete_beta(0.5 * df, 0.5, x)))
+
+
+def _regularized_incomplete_beta(a: float, b: float, x: float) -> float:
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    log_bt = (
+        math.lgamma(a + b)
+        - math.lgamma(a)
+        - math.lgamma(b)
+        + a * math.log(x)
+        + b * math.log1p(-x)
+    )
+    bt = math.exp(log_bt)
+    if x < (a + 1.0) / (a + b + 2.0):
+        return bt * _beta_continued_fraction(a, b, x) / a
+    return 1.0 - bt * _beta_continued_fraction(b, a, 1.0 - x) / b
+
+
+def _beta_continued_fraction(a: float, b: float, x: float) -> float:
+    max_iter = 200
+    eps = 3e-14
+    fpmin = 1e-300
+    qab = a + b
+    qap = a + 1.0
+    qam = a - 1.0
+    c = 1.0
+    d = 1.0 - qab * x / qap
+    if abs(d) < fpmin:
+        d = fpmin
+    d = 1.0 / d
+    h = d
+    for m in range(1, max_iter + 1):
+        m2 = 2 * m
+        aa = m * (b - m) * x / ((qam + m2) * (a + m2))
+        d = 1.0 + aa * d
+        if abs(d) < fpmin:
+            d = fpmin
+        c = 1.0 + aa / c
+        if abs(c) < fpmin:
+            c = fpmin
+        d = 1.0 / d
+        h *= d * c
+
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
+        d = 1.0 + aa * d
+        if abs(d) < fpmin:
+            d = fpmin
+        c = 1.0 + aa / c
+        if abs(c) < fpmin:
+            c = fpmin
+        d = 1.0 / d
+        delta = d * c
+        h *= delta
+        if abs(delta - 1.0) < eps:
+            break
+    return h
+
+
+def _benjamini_hochberg(p_values: list[float]) -> list[float]:
+    m = len(p_values)
+    if m == 0:
+        return []
+    clipped = [max(_MIN_P_VALUE, min(1.0, float(p))) for p in p_values]
+    order = sorted(range(m), key=lambda index: clipped[index])
+    adjusted = [1.0] * m
+    running = 1.0
+    for rank, index in enumerate(reversed(order), start=1):
+        original_rank = m - rank + 1
+        q_value = clipped[index] * m / original_rank
+        running = min(running, q_value)
+        adjusted[index] = min(1.0, running)
+    return adjusted
+
+
+def _fdr_significance_score(q_value: float) -> float:
+    q = max(_MIN_P_VALUE, min(1.0, float(q_value)))
+    return max(0.0, -math.log10(q))
+
+
+def _finite_float_or_none(value: float) -> float | None:
+    return float(value) if math.isfinite(value) else None
 
 
 def split_metric_column(column: str) -> tuple[str, str]:

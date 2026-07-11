@@ -1,0 +1,30 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-route-service_loss-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-route-service",
+  "ranked_roots": [
+    "ts-route-service",
+    "ts-travel2-service",
+    "ts-admin-travel-service",
+    "ts-travel-service",
+    "ts-food-service",
+    "ts-order-service",
+    "ts-price-service",
+    "ts-payment-service",
+    "ts-user-service",
+    "ts-inside-payment-service",
+    "ts-train-service",
+    "ts-seat-service",
+    "ts-ticketinfo-service",
+    "ts-basic-service",
+    "ts-order-other-service"
+  ],
+  "fault_type": "disk",
+  "accepted": true,
+  "confidence": 0.7565688947683659,
+  "latency_s": 556.82,
+  "total_tokens": 273614,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-travel2-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-route-service, margin=0.6468, threshold=0.625)"
+}

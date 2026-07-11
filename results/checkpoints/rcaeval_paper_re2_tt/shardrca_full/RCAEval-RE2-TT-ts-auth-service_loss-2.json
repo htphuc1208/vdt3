@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_loss-2",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-inside-payment-service",
+  "ranked_roots": [
+    "ts-inside-payment-service",
+    "ts-consign-service",
+    "ts-order-service",
+    "ts-assurance-service",
+    "ts-payment-service",
+    "ts-contacts-service",
+    "ts-route-plan-service",
+    "ts-admin-route-service",
+    "ts-admin-order-service",
+    "ts-travel-plan-service"
+  ],
+  "fault_type": "db",
+  "accepted": true,
+  "confidence": 0.2959742821706452,
+  "latency_s": 181.39,
+  "total_tokens": 275909,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-inside-payment-service; no promotion."
+}

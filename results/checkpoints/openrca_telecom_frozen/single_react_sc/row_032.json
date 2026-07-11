@@ -1,0 +1,20 @@
+{
+  "fingerprint": "ac04b6921e3c1ebd59f513fdb8d87bb53721f0671d98e0707e7d5de6f6851238",
+  "row": {
+    "row_id": 32,
+    "task_index": "task_6",
+    "instruction": "During the specified time range of May 27, 2020, from 01:30 to 02:00, the system experienced a failure. The exact root cause component and the underlying reason for this failure are currently unknown. Please identify the root cause component and the root cause reason.",
+    "prediction": "{\"1\": {\"root cause component\": \"os_011\", \"root cause reason\": \"CPU fault\"}}",
+    "scoring_points": "The only predicted root cause component is db_003\nThe only predicted root cause reason is db connection limit\n",
+    "passed": "",
+    "failed": "db_003\ndb connection limit",
+    "score": 0.0,
+    "strict_correct": false,
+    "system": "single_react_sc",
+    "latency_s": 29.25,
+    "total_tokens": 21096,
+    "llm_calls": 9,
+    "tool_calls": 9,
+    "volume_bin": "high"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_cpu-1",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-order-service",
+  "ranked_roots": [
+    "ts-order-service",
+    "ts-order-other-service",
+    "ts-inside-payment-service",
+    "ts-consign-service",
+    "ts-security-service",
+    "ts-payment-service",
+    "ts-station-service",
+    "ts-basic-service",
+    "ts-seat-service",
+    "ts-route-service",
+    "ts-train-service",
+    "ts-ticketinfo-service",
+    "ts-travel-service",
+    "ts-ui-dashboard",
+    "ts-travel2-service"
+  ],
+  "fault_type": "cpu",
+  "accepted": true,
+  "confidence": 0.9077,
+  "latency_s": 302.82,
+  "total_tokens": 304936,
+  "tool_calls": 37,
+  "llm_calls": 36,
+  "notes": "Targeted evidence supports ts-order-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-order-service, margin=0.9077, threshold=0.625)"
+}

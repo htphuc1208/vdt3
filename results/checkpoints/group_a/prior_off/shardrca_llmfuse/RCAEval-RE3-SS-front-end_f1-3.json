@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE3-SS-front-end_f1-3",
+  "runtime_case_id": "RE3-SS-528f8db5f57a",
+  "source": "RE3-SS",
+  "system": "shardrca_llmfuse",
+  "prior": "off",
+  "predicted_root": "carts",
+  "true_root": "front-end",
+  "hit_at_1": 0,
+  "hit_at_3": 0,
+  "mrr": 0.1429,
+  "total_tokens": 3225,
+  "llm_calls": 3,
+  "tool_calls": 10,
+  "latency_s": 5.92
+}

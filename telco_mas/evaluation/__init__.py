@@ -1,1 +1,1 @@
-"""Evaluation: score pipeline results against ground truth and benchmark systems."""
+"""Evaluation helpers for RCAEval/OpenRCA scoring, statistics, and claim audit."""

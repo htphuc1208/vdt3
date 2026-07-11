@@ -1,0 +1,20 @@
+{
+  "fingerprint": "ac04b6921e3c1ebd59f513fdb8d87bb53721f0671d98e0707e7d5de6f6851238",
+  "row": {
+    "row_id": 3,
+    "task_index": "task_2",
+    "instruction": "A single failure was detected during the time range of April 11, 2020, from 02:30 to 03:00. The specific reason for this failure is currently unknown. Your task is to determine the root cause reason.",
+    "prediction": "{\"1\": {\"root cause reason\": \"CPU fault\"}}",
+    "scoring_points": "The only predicted root cause reason is CPU fault\n",
+    "passed": "CPU fault",
+    "failed": "",
+    "score": 1.0,
+    "strict_correct": true,
+    "system": "single_react_sc",
+    "latency_s": 24.57,
+    "total_tokens": 20724,
+    "llm_calls": 9,
+    "tool_calls": 9,
+    "volume_bin": "middle"
+  }
+}

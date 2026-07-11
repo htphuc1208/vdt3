@@ -1,0 +1,32 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-route-service_socket-1",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-route-service",
+  "ranked_roots": [
+    "ts-route-service",
+    "ts-travel-service",
+    "ts-preserve-other-mongo",
+    "ts-consign-mongo",
+    "ts-food-service",
+    "ts-consign-price-service",
+    "ts-payment-service",
+    "ts-contacts-mongo",
+    "ts-order-service",
+    "ts-assurance-service",
+    "ts-consign-service",
+    "ts-admin-travel-service",
+    "ts-ui-dashboard",
+    "ts-travel2-service",
+    "ts-station-service",
+    "ts-station-mongo",
+    "ts-preserve-service"
+  ],
+  "fault_type": "cpu",
+  "accepted": true,
+  "confidence": 0.7855,
+  "latency_s": 584.11,
+  "total_tokens": 273618,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-travel-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-route-service, margin=0.7855, threshold=0.625)"
+}

@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE3-OB-emailservice_f2-3",
+  "runtime_case_id": "RE3-OB-010764a5ad58",
+  "source": "RE3-OB",
+  "system": "shardrca_llmboard",
+  "prior": "off",
+  "predicted_root": "emailservice",
+  "true_root": "emailservice",
+  "hit_at_1": 1,
+  "hit_at_3": 1,
+  "mrr": 1.0,
+  "total_tokens": 22326,
+  "llm_calls": 3,
+  "tool_calls": 7,
+  "latency_s": 3.86
+}

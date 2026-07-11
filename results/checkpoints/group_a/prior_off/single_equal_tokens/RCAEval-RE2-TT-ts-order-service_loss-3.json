@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_loss-3",
+  "runtime_case_id": "RE2-TT-0971734c293a",
+  "source": "RE2-TT",
+  "system": "single_equal_tokens",
+  "prior": "off",
+  "predicted_root": "ts-admin-basic-info-service",
+  "true_root": "ts-order-service",
+  "hit_at_1": 0,
+  "hit_at_3": 0,
+  "mrr": 0.0,
+  "total_tokens": 15139,
+  "llm_calls": 3,
+  "tool_calls": 4,
+  "latency_s": 5.43
+}

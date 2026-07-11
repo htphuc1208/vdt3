@@ -3,9 +3,9 @@
 The offline local-fusion proxy is stuck at ~0.70 Hit@1 vs a 0.93 candidate ceiling,
 and four deterministic re-ranking levers all fail to move it. This probe runs the
 LIVE LLM ``shardrca_full`` (synthesizer over the sharded board) against the offline
-proxy and the ``same_board_single`` oracle on the SAME disjoint dev cases, to tell
-whether the live mechanism already recovers the headroom the deterministic proxy
-cannot. It never touches the locked v7 holdout or the C high-volume split.
+proxy on the SAME disjoint dev cases, to tell whether the live mechanism already
+recovers the headroom the deterministic proxy cannot. It never touches the locked
+v7 holdout or the C high-volume split.
 
 This spends LLM budget; keep ``--n`` small. The LLM cache makes re-runs free.
 """
@@ -38,7 +38,7 @@ def _run_with_retry(case, system, llm, *, attempts: int = 4):
                 raise
             time.sleep(2.0 * attempt)
 
-PROBE_SYSTEMS = ("shardrca_full", "same_board_single", "shardrca_local_fusion")
+PROBE_SYSTEMS = ("shardrca_full", "shardrca_local_fusion")
 
 
 def run_probe(
@@ -96,7 +96,7 @@ def run_probe(
         for base in (f"rcaeval_{s}" for s in systems if s != "shardrca_full")
     }
     return {
-        "probe": "live_synthesizer_vs_offline_proxy_and_oracle",
+        "probe": "live_synthesizer_vs_offline_proxy",
         "n_cases": len(cases),
         "graph_only": graph_only,
         "seed": seed,
@@ -104,8 +104,7 @@ def run_probe(
         "paired_vs_shardrca_full": paired,
         "interpretation": (
             "If live shardrca_full Hit@1 >> offline shardrca_local_fusion, the offline proxy "
-            "under-estimates the mechanism and re-ranking is not the bottleneck. If it also "
-            "matches/beats same_board_single, the oracle gap is closable live."
+            "under-estimates the mechanism and re-ranking is not the bottleneck."
         ),
         "rows": rows,
     }

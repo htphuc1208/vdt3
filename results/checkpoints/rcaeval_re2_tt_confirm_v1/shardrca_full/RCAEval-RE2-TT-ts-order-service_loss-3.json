@@ -1,0 +1,31 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_loss-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-order-service",
+  "ranked_roots": [
+    "ts-order-service",
+    "ts-station-mongo",
+    "ts-travel-service",
+    "ts-payment-mongo",
+    "ts-price-service",
+    "ts-inside-payment-mongo",
+    "ts-inside-payment-service",
+    "ts-station-service",
+    "ts-consign-price-mongo",
+    "ts-auth-service",
+    "ts-food-service",
+    "ts-admin-basic-info-service",
+    "ts-food-map-service",
+    "ts-order-other-service",
+    "ts-preserve-service",
+    "ts-admin-route-service"
+  ],
+  "fault_type": "delay",
+  "accepted": true,
+  "confidence": 0.6742,
+  "latency_s": 308.91,
+  "total_tokens": 260421,
+  "tool_calls": 37,
+  "llm_calls": 33,
+  "notes": "Targeted evidence supports ts-order-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-order-service, margin=0.6742, threshold=0.625)"
+}

@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_mem-1",
+  "runtime_case_id": "RE2-TT-5fd2fad16888",
+  "source": "RE2-TT",
+  "system": "shardrca_full",
+  "prior": "on",
+  "predicted_root": "ts-basic-service",
+  "true_root": "ts-order-service",
+  "hit_at_1": 0,
+  "hit_at_3": 0,
+  "mrr": 0.2,
+  "total_tokens": 297722,
+  "llm_calls": 35,
+  "tool_calls": 37,
+  "latency_s": 12.21
+}

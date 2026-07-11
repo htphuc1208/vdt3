@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-route-service_cpu-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-route-service",
+  "ranked_roots": [
+    "ts-route-service",
+    "ts-config-service",
+    "ts-admin-basic-info-service",
+    "ts-travel-service",
+    "ts-order-other-service",
+    "ts-consign-service",
+    "ts-travel2-service",
+    "ts-train-mongo",
+    "ts-preserve-other-mongo",
+    "ts-ui-dashboard"
+  ],
+  "fault_type": "db",
+  "accepted": true,
+  "confidence": 0.7007497107642453,
+  "latency_s": 164.18,
+  "total_tokens": 261379,
+  "tool_calls": 37,
+  "llm_calls": 33,
+  "notes": "Targeted evidence supports ts-route-service; no promotion."
+}

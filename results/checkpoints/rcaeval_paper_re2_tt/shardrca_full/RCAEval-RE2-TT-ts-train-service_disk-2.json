@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-train-service_disk-2",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-travel2-service",
+  "ranked_roots": [
+    "ts-travel2-service",
+    "ts-travel-service",
+    "ts-notification-mongo",
+    "ts-travel-mongo",
+    "ts-food-service",
+    "ts-config-mongo",
+    "ts-order-service",
+    "ts-seat-service",
+    "ts-contacts-mongo",
+    "ts-food-map-service"
+  ],
+  "fault_type": "unknown",
+  "accepted": true,
+  "confidence": 0.5682452450732861,
+  "latency_s": 258.77,
+  "total_tokens": 273250,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-travel2-service; no promotion."
+}

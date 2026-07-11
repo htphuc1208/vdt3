@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE3-OB-emailservice_f3-1",
+  "runtime_case_id": "RE3-OB-a63136af7d2d",
+  "source": "RE3-OB",
+  "system": "single_react_sc",
+  "prior": "off",
+  "predicted_root": "emailservice",
+  "true_root": "emailservice",
+  "hit_at_1": 1,
+  "hit_at_3": 1,
+  "mrr": 1.0,
+  "total_tokens": 13338,
+  "llm_calls": 9,
+  "tool_calls": 12,
+  "latency_s": 10.39
+}

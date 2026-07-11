@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_disk-1",
+  "runtime_case_id": "RE2-TT-33a4d28378ab",
+  "source": "RE2-TT",
+  "system": "shardrca_full",
+  "prior": "off",
+  "predicted_root": "ts-station-service",
+  "true_root": "ts-auth-service",
+  "hit_at_1": 0,
+  "hit_at_3": 1,
+  "mrr": 0.5,
+  "total_tokens": 272449,
+  "llm_calls": 34,
+  "tool_calls": 37,
+  "latency_s": 274.53
+}

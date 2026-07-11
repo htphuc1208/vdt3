@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_loss-2",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-order-service",
+  "ranked_roots": [
+    "ts-order-service",
+    "ts-consign-price-service",
+    "ts-food-map-mongo",
+    "ts-route-mongo",
+    "ts-station-service",
+    "ts-consign-service",
+    "ts-inside-payment-service",
+    "ts-order-mongo",
+    "ts-preserve-mongo",
+    "ts-order-other-service"
+  ],
+  "fault_type": "db",
+  "accepted": true,
+  "confidence": 0.44408486732471936,
+  "latency_s": 154.76,
+  "total_tokens": 257176,
+  "tool_calls": 37,
+  "llm_calls": 33,
+  "notes": "Targeted evidence supports ts-order-service; no promotion."
+}

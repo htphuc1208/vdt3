@@ -69,7 +69,9 @@ def evaluate_prediction(prediction: str, scoring_points: str) -> tuple[list[str]
                 best_passing = current_passing
 
     failed = list(set(components + reasons + times) - set(best_passing))
-    return best_passing, failed, round(best_score / score_count, 4)
+    # Match microsoft/OpenRCA main/evaluate.py exactly. This matters for
+    # aggregate partial accuracy even though strict accuracy is unchanged.
+    return best_passing, failed, round(best_score / score_count, 2)
 
 
 def build_eval_result(
@@ -143,4 +145,3 @@ def _difficulty(task_index: str) -> str:
     if task_id <= 6:
         return "middle"
     return "hard"
-

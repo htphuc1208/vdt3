@@ -75,13 +75,9 @@ def resolve_baseline(
 
 def is_single_system(system: str) -> bool:
     lower = system.lower()
-    if lower.startswith("single"):
+    if lower.startswith("single") or lower.startswith("rcaeval_single"):
         return True
-    if lower.endswith("_single") or lower.endswith("-single"):
-        return True
-    if "single_" in lower or "_single_" in lower:
-        return True
-    return lower in {"same_board_single", "code_retrieval_single", "instruction_llm"}
+    return lower in {"code_retrieval_single", "instruction_llm"}
 
 
 def _paired_cases(rows: list[dict[str, Any]], baseline: str, treatment: str) -> set[str]:

@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE3-OB-adservice_f5-2",
+  "runtime_case_id": "RE3-OB-5f3a38147ae0",
+  "source": "RE3-OB",
+  "system": "single_react_sc",
+  "prior": "off",
+  "predicted_root": "adservice",
+  "true_root": "adservice",
+  "hit_at_1": 1,
+  "hit_at_3": 1,
+  "mrr": 1.0,
+  "total_tokens": 12867,
+  "llm_calls": 9,
+  "tool_calls": 12,
+  "latency_s": 9.74
+}

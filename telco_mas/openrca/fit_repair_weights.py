@@ -1,4 +1,10 @@
-"""Validation-only fitter for OpenRCA ShardRCA repair weights."""
+"""Validation-only fitter for OpenRCA ShardRCA repair weights.
+
+The default claim protocol does not consume this output. A tuned repair-weight
+artifact can support evidence only after a separate preregistration names the
+validation rows, forbidden holdout rows, artifact path, and algorithm ID before
+the holdout is run.
+"""
 from __future__ import annotations
 
 import argparse
@@ -155,8 +161,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("paths", nargs="+", help="OpenRCA result artifacts containing shardrca_full worker artifacts")
     parser.add_argument("--dev-rows", required=True, help="comma-separated validation row IDs permitted for fitting")
     parser.add_argument("--forbid-prereg", action="append", default=[], help="frozen prereg JSON whose rows must be refused")
-    parser.add_argument("--out-weights", default="results/weights/openrca_repair_v1.json")
-    parser.add_argument("--out-report", default="results/openrca_repair_fit_report.json")
+    parser.add_argument("--out-weights", default="results/weights/validation_openrca_repair_v1.json")
+    parser.add_argument("--out-report", default="results/validation_openrca_repair_fit_report.json")
     parser.add_argument("--version", default="openrca_repair_v1")
     parser.add_argument("--fit-on", default="declared_openrca_validation_rows")
     args = parser.parse_args(argv)

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from math import exp, log, sqrt
+from math import exp, log
 
 from .board import (
     Blackboard,
@@ -29,44 +29,96 @@ def _worker_effective_weight(
 
     Product-of-experts is only valid for *conditionally independent* sources.
     Evidence-isolated workers are not independent: they observe the same
-    propagated symptoms of one root, so their errors correlate. Because on the
-    real telecom path every worker shares the full candidate scope, we read the
-    correlation off the workers' *explicit* candidate agreement (which components
-    they actually flag). High mean pairwise Jaccard agreement => the ensemble
-    behaves like fewer independent experts:
+    propagated symptoms of one root, so their errors correlate. We estimate that
+    redundancy with the mean positive Pearson correlation between each worker's
+    component-level posterior vector. High mean posterior correlation => the
+    ensemble behaves like fewer independent experts:
 
-        N_eff = 1 + (N - 1) * (1 - rho * mean_agreement)
+        N_eff = 1 + (N - 1) * (1 - rho * mean_correlation)
         weight = N_eff / N          (applied equally to every worker)
 
     ``rho = 0`` gives weight 1 (unchanged PoE); a fully-agreeing ensemble at
     ``rho = 1`` gives weight 1/N (a weighted geometric mean = one effective
     expert). Returns 1.0 for degenerate ensembles (< 2 workers).
     """
-    flagged: list[set[str]] = []
+    component_order = sorted(component_set)
+    if not component_order:
+        return 1.0
+    vectors: list[list[float]] = []
     for dist in distributions:
         scope = {c for c in dist.candidate_scope if c in component_set}
         if not scope:
             continue
-        explicit = {item.component for item in dist.candidates if item.component in scope}
-        flagged.append(explicit)
-    n = len(flagged)
+        vectors.append(_worker_component_vector(dist, component_order, scope))
+    n = len(vectors)
     if n < 2 or correlation_rho <= 0.0:
         return 1.0
-    overlaps: list[float] = []
+    correlations: list[float] = []
     for i in range(n):
         for j in range(i + 1, n):
-            union = flagged[i] | flagged[j]
-            overlaps.append(len(flagged[i] & flagged[j]) / len(union) if union else 0.0)
-    mean_agreement = sum(overlaps) / len(overlaps) if overlaps else 0.0
-    n_eff = 1.0 + (n - 1) * (1.0 - correlation_rho * mean_agreement)
+            # Negative correlation is disagreement, not redundant confirmation.
+            correlations.append(max(0.0, _pearson_correlation(vectors[i], vectors[j])))
+    mean_correlation = sum(correlations) / len(correlations) if correlations else 0.0
+    n_eff = 1.0 + (n - 1) * (1.0 - correlation_rho * mean_correlation)
     return max(1.0 / n, min(1.0, n_eff / n))
+
+
+def _worker_component_vector(
+    distribution: WorkerDistribution,
+    component_order: list[str],
+    scope: set[str],
+) -> list[float]:
+    """Project a worker posterior onto component mass for correlation checks."""
+
+    values = {component: 0.0 for component in component_order}
+    scoped_items = [item for item in distribution.candidates if item.component in scope]
+    explicit_mass = sum(max(0.0, float(item.probability)) for item in scoped_items)
+    scale = 1.0 / explicit_mass if explicit_mass > 1.0 else 1.0
+    scaled_explicit_mass = min(1.0, explicit_mass)
+    explicit_components: set[str] = set()
+    for item in scoped_items:
+        probability = max(0.0, float(item.probability)) * scale
+        values[item.component] += probability
+        explicit_components.add(item.component)
+
+    other_mass = min(float(distribution.other_mass), max(0.0, 1.0 - scaled_explicit_mass))
+    remaining = [component for component in scope if component not in explicit_components]
+    if other_mass > 0.0:
+        if remaining:
+            fallback = other_mass / len(remaining)
+            for component in remaining:
+                values[component] += fallback
+        else:
+            fallback = other_mass / max(1, len(scope))
+            for component in scope:
+                values[component] += fallback
+
+    total = sum(values.values())
+    if total <= 0.0:
+        return [1.0 / len(component_order) for _ in component_order]
+    return [values[component] / total for component in component_order]
+
+
+def _pearson_correlation(a: list[float], b: list[float]) -> float:
+    if len(a) != len(b) or not a:
+        return 0.0
+    mean_a = sum(a) / len(a)
+    mean_b = sum(b) / len(b)
+    centered_a = [value - mean_a for value in a]
+    centered_b = [value - mean_b for value in b]
+    denom_a = sum(value * value for value in centered_a)
+    denom_b = sum(value * value for value in centered_b)
+    denominator = (denom_a * denom_b) ** 0.5
+    if denominator <= 0.0:
+        return 0.0
+    return sum(x * y for x, y in zip(centered_a, centered_b)) / denominator
 
 
 def candidate_evidence_from_findings(
     shard_id: str,
     findings: list[Finding],
     *,
-    max_candidates: int = 2,
+    max_candidates: int = 6,
 ) -> list[CandidateEvidence]:
     """Summarize one worker shard as local candidate evidence records."""
 
@@ -127,21 +179,14 @@ def fuse_candidate_evidence(
     reason_scores: dict[str, Counter[str]] = {}
     for key, items in by_component.items():
         weighted_sum = sum(_weighted_support(item, weights) for item in items)
-        modalities = {item.modality for item in items}
-        shard_count = len({item.shard_id for item in items if item.shard_id})
-        convergence = (
-            1.0
-            + weights.convergence_modality_bonus * max(0, len(modalities) - 1)
-            + weights.convergence_shard_bonus * sqrt(max(0, shard_count - 1))
-        )
-        scored.append((key, weighted_sum * convergence))
+        scored.append((key, weighted_sum))
         reasons: Counter[str] = Counter()
         for item in items:
             reasons[item.reason_family or "unknown"] += _weighted_support(item, weights)
         reason_scores[key] = reasons
 
     scored.sort(key=lambda item: item[1], reverse=True)
-    total_score = sum(score for _, score in scored) or 1.0
+    total_positive_score = sum(max(0.0, score) for _, score in scored) or 1.0
     candidates: list[CandidateRootCause] = []
     for key, score in scored[:max_candidates]:
         items = by_component[key]
@@ -153,7 +198,7 @@ def fuse_candidate_evidence(
                 component=component,
                 reason=reason,
                 occurrence_time=_first_occurrence(board.evidence_for(component, limit=6)),
-                confidence=max(0.05, min(0.95, score / total_score)),
+                confidence=max(0.0, min(0.95, max(0.0, score) / total_positive_score)),
                 rationale=_fusion_rationale(component, reason, items, score),
                 evidence=ptrs,
                 score=score,
@@ -180,11 +225,10 @@ def fuse_worker_distributions(
 ) -> SynthesizerResult:
     """Fuse local posteriors as a redundancy-discounted log-opinion pool.
 
-    With the default weights (``redundancy_lambda=0``, ``temperature=1``) this is
-    exactly the previous equal-weight product of experts. A fitted/frozen
-    ``FusionWeights`` down-weights correlated workers and tempers the fused
-    posterior, which is the mechanism intended to close the same-board oracle gap
-    without over-counting non-independent evidence.
+    With the default weights (``correlation_rho=0``, ``temperature=1``) this is
+    exactly the previous equal-weight product of experts. A preregistered
+    validation artifact can down-weight correlated workers and temper the fused
+    posterior, but current claim protocols use the default no-fit artifact.
     """
 
     weights = weights or FusionWeights.load()
@@ -209,17 +253,19 @@ def fuse_worker_distributions(
             # modality overturn a numeric majority (i.e. change the argmax).
             w *= weights.modality_weight(str(distribution.modality))
         explicit: dict[tuple[str, str], CandidateEvidence] = {}
+        explicit_probability: dict[tuple[str, str], float] = {}
         explicit_mass = 0.0
         for item in distribution.candidates:
             pair = (item.component, item.reason_family)
             if item.component not in scope or item.reason_family not in reason_set or pair in explicit:
                 continue
             explicit[pair] = item
-            explicit_mass += float(item.probability)
+            probability = max(0.0, float(item.probability))
+            explicit_probability[pair] = probability
+            explicit_mass += probability
         if explicit_mass > 1.0 + 1e-6:
             scale = 1.0 / explicit_mass
-            for item in explicit.values():
-                item.probability *= scale
+            explicit_probability = {pair: probability * scale for pair, probability in explicit_probability.items()}
             explicit_mass = 1.0
         other_mass = min(float(distribution.other_mass), max(0.0, 1.0 - explicit_mass))
         remaining = max(1, len(scope) * len(reasons) - len(explicit))
@@ -237,7 +283,7 @@ def fuse_worker_distributions(
                 item = explicit.get((component, reason))
                 probability = max(
                     epsilon,
-                    float(item.probability) if item is not None else fallback_probability,
+                    explicit_probability.get((component, reason), 0.0) if item is not None else fallback_probability,
                 )
             else:
                 probability = abstain_probability
@@ -317,7 +363,7 @@ def _worker_pair_rank_key(
 
 def _weighted_support(item: CandidateEvidence, weights: FusionWeights | None = None) -> float:
     weights = weights or FusionWeights.default()
-    raw = max(0.0, float(item.support_score) - float(item.refute_score))
+    raw = float(item.support_score) - float(item.refute_score)
     rank_discount = 1.0 / max(1.0, float(item.local_rank)) ** 0.5
     return raw * weights.modality_weight(str(item.modality)) * rank_discount
 

@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE3-OB-emailservice_f1-3",
+  "runtime_case_id": "RE3-OB-a1e478fae1ee",
+  "source": "RE3-OB",
+  "system": "shardrca_full",
+  "prior": "off",
+  "predicted_root": "paymentservice",
+  "true_root": "emailservice",
+  "hit_at_1": 0,
+  "hit_at_3": 1,
+  "mrr": 0.3333,
+  "total_tokens": 18436,
+  "llm_calls": 6,
+  "tool_calls": 7,
+  "latency_s": 39.83
+}

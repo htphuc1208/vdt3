@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-train-service_mem-2",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-food-map-service",
+  "ranked_roots": [
+    "ts-food-map-service",
+    "ts-travel2-service",
+    "ts-price-service",
+    "ts-travel-service",
+    "ts-seat-service",
+    "ts-order-service",
+    "ts-inside-payment-service",
+    "ts-admin-travel-service",
+    "ts-preserve-other-service",
+    "ts-order-other-service"
+  ],
+  "fault_type": "db",
+  "accepted": true,
+  "confidence": 0.16826622735241512,
+  "latency_s": 271.17,
+  "total_tokens": 282103,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-food-map-service; no promotion."
+}

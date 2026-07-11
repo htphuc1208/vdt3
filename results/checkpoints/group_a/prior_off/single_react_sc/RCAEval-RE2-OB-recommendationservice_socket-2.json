@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-OB-recommendationservice_socket-2",
+  "runtime_case_id": "RE2-OB-9217fd30e244",
+  "source": "RE2-OB",
+  "system": "single_react_sc",
+  "prior": "off",
+  "predicted_root": "adservice",
+  "true_root": "recommendationservice",
+  "hit_at_1": 0,
+  "hit_at_3": 0,
+  "mrr": 0.0,
+  "total_tokens": 13623,
+  "llm_calls": 9,
+  "tool_calls": 12,
+  "latency_s": 10.31
+}

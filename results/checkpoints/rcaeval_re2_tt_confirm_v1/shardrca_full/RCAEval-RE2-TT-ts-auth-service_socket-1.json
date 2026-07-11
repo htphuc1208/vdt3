@@ -1,0 +1,33 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_socket-1",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-auth-service",
+  "ranked_roots": [
+    "ts-auth-service",
+    "ts-user-service",
+    "ts-inside-payment-service",
+    "ts-travel-service",
+    "ts-payment-service",
+    "ts-security-service",
+    "ts-consign-price-service",
+    "ts-order-service",
+    "ts-order-other-service",
+    "ts-assurance-service",
+    "ts-ui-dashboard",
+    "ts-preserve-other-service",
+    "ts-price-service",
+    "ts-price-mongo",
+    "ts-food-map-service",
+    "ts-order-other-mongo",
+    "ts-station-mongo",
+    "ts-consign-service"
+  ],
+  "fault_type": "cpu",
+  "accepted": true,
+  "confidence": 0.7082,
+  "latency_s": 336.2,
+  "total_tokens": 272400,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-auth-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-auth-service, margin=0.7082, threshold=0.625)"
+}

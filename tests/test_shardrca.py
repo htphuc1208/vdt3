@@ -4,16 +4,29 @@ import json
 import pandas as pd
 
 from telco_mas.evaluation.rcaeval_adapter import load_cases
+from telco_mas.llm import LLMClient
 from telco_mas.shardrca.catalog import build_catalog_for_case, extract_window_csv, make_component_group_shards
 from telco_mas.shardrca.hard_split import build_hard_split
-from telco_mas.shardrca.mining import _log_count_shift_score, mine_metric_shifts, normalise_log_template
+from telco_mas.shardrca.mining import (
+    _Stats,
+    _benjamini_hochberg,
+    _log_count_shift_score,
+    _welch_mean_shift,
+    mine_metric_shifts,
+    normalise_log_template,
+)
 from telco_mas.shardrca.miner import MinerWorker
+from telco_mas.shardrca.panel import adjudicate_panel, metric_specialist
 from telco_mas.shardrca.catalog import ShardSpec
-from telco_mas.shardrca.board import Blackboard, CandidateEvidence, Finding, WorkerDistribution
+from telco_mas.shardrca.board import Blackboard, CandidateEvidence, CandidateRootCause, Finding, WorkerDistribution
+from telco_mas.shardrca.falsifier import falsify
 from telco_mas.shardrca.fusion import fuse_candidate_evidence, fuse_worker_distributions
+from telco_mas.shardrca.interaction import interact_candidate_evidence
 from telco_mas.shardrca.result_analysis import analyze_results
-from telco_mas.shardrca.runner import run_rcaeval_case
+from telco_mas.shardrca.runner import run_catalog, run_rcaeval_case
 from telco_mas.shardrca.single_baseline import _candidate_from_agent, _single_react_user_prompt, run_single_react
+from telco_mas.shardrca.synthesizer import SynthesizerResult
+from telco_mas.shardrca.weights import FusionWeights
 
 
 def test_windowed_extract_filters_csv_with_chunked_io(tmp_path):
@@ -44,6 +57,9 @@ def test_metric_miner_ranks_injected_service_from_rcaeval_fixture(tmp_path):
     assert findings[0].component == "adservice"
     assert findings[0].signal == "cpu"
     assert findings[0].direction == "high"
+    assert findings[0].metadata["score_method"] == "welch_t_bh_fdr_neg_log10_q"
+    assert findings[0].metadata["multiple_testing"] == "benjamini_hochberg"
+    assert findings[0].metadata["q_value"] <= findings[0].metadata["p_value"] * len(findings)
 
 
 def test_log_template_normalizer_accepts_missing_scalar():
@@ -54,6 +70,26 @@ def test_log_count_shift_score_is_volume_calibrated():
     assert _log_count_shift_score(100, 100) == 0.0
     assert 0 < _log_count_shift_score(0, 640) < 10
     assert _log_count_shift_score(0, 640) > _log_count_shift_score(0, 2)
+    assert _log_count_shift_score(0, 2) == _log_count_shift_score(0, 2, support_tau=2.0)
+
+
+def test_welch_metric_shift_uses_sample_size():
+    small_pre = _stats_from_values([0.0, 1.0, 0.0, 1.0])
+    small_post = _stats_from_values([1.0, 2.0, 1.0, 2.0])
+    large_pre = _stats_from_values([0.0, 1.0] * 20)
+    large_post = _stats_from_values([1.0, 2.0] * 20)
+
+    small = _welch_mean_shift(small_pre, small_post)
+    large = _welch_mean_shift(large_pre, large_post)
+
+    assert large.t_stat > small.t_stat
+    assert large.p_value < small.p_value
+
+
+def test_benjamini_hochberg_adjusts_metric_family():
+    q_values = _benjamini_hochberg([0.001, 0.02, 0.5])
+
+    assert q_values == [0.003, 0.03, 0.5]
 
 
 def test_component_score_caps_correlated_signals_per_modality():
@@ -68,7 +104,7 @@ def test_component_score_caps_correlated_signals_per_modality():
     assert board.top_components(1)[0][0] == "causal"
 
 
-def test_local_candidate_fusion_rewards_cross_modal_convergence():
+def test_local_candidate_fusion_is_additive_not_convergence_boosted():
     board = Blackboard(case_id="opaque")
     board.extend([
         Finding(shard_id="m0", modality="metrics", component="single", signal="cpu", score=5.0, evidence_ptr="m0"),
@@ -82,9 +118,15 @@ def test_local_candidate_fusion_rewards_cross_modal_convergence():
     ]
 
     result = fuse_candidate_evidence(evidence, board)
+    legacy_boost_result = fuse_candidate_evidence(
+        evidence,
+        board,
+        weights=FusionWeights(convergence_modality_bonus=99.0, convergence_shard_bonus=99.0),
+    )
 
     assert result.winner.component == "converged"
     assert result.vote_breakdown["converged"] > result.vote_breakdown["single"]
+    assert legacy_boost_result.vote_breakdown == result.vote_breakdown
 
 
 def test_product_of_experts_fuses_independent_worker_distributions():
@@ -143,6 +185,195 @@ def test_product_of_experts_fuses_independent_worker_distributions():
     assert result.winner.evidence == ["metric#1"]
 
 
+def test_worker_distribution_fusion_does_not_mutate_input_probabilities():
+    board = Blackboard(case_id="opaque")
+    candidates = [
+        CandidateEvidence(
+            component="docker_001",
+            reason_family="CPU fault",
+            probability=0.8,
+            modality="metrics",
+            worker_id="metric",
+        ),
+        CandidateEvidence(
+            component="docker_002",
+            reason_family="CPU fault",
+            probability=0.8,
+            modality="metrics",
+            worker_id="metric",
+        ),
+    ]
+    distributions = [
+        WorkerDistribution(
+            worker_id="metric",
+            modality="metrics",
+            candidate_scope=["docker_001", "docker_002"],
+            candidates=candidates,
+            other_mass=0.0,
+        )
+    ]
+
+    fuse_worker_distributions(
+        distributions,
+        board,
+        components=["docker_001", "docker_002"],
+        reasons=["CPU fault"],
+    )
+
+    assert [item.probability for item in candidates] == [0.8, 0.8]
+
+
+def test_autonomous_peer_interaction_adds_auditable_reviews():
+    board = Blackboard(case_id="opaque")
+    board.add(Finding(shard_id="metrics_a", modality="metrics", component="svc-a", signal="cpu", score=4.0, evidence_ptr="m#a"))
+    board.add(Finding(shard_id="logs_b", modality="logs", component="svc-a", signal="error", score=3.0, evidence_ptr="l#a"))
+    evidence = [
+        CandidateEvidence(
+            component="svc-a",
+            reason_family="cpu",
+            support_score=4.0,
+            modality="metrics",
+            worker_id="agent_metrics",
+            shard_id="metrics_a",
+            evidence_ptrs=["m#a"],
+        ),
+        CandidateEvidence(
+            component="svc-a",
+            reason_family="cpu",
+            support_score=3.0,
+            modality="logs",
+            worker_id="agent_logs",
+            shard_id="logs_b",
+            evidence_ptrs=["l#a"],
+        ),
+    ]
+
+    result = interact_candidate_evidence(evidence, board, llm=None)
+
+    assert result.diagnostics["enabled"] is True
+    assert len(result.evidence) > len(evidence)
+    assert any(message["type"] == "peer_review" for message in result.transcript)
+    assert any(item.worker_id.endswith("_peer_review") for item in result.evidence)
+
+
+def test_deterministic_peer_support_uses_symmetric_evidence_budget():
+    board = Blackboard(case_id="opaque")
+    evidence = [
+        CandidateEvidence(
+            component="svc-a",
+            reason_family="cpu",
+            support_score=4.0,
+            modality="metrics",
+            worker_id="agent_metrics",
+            shard_id="metrics",
+            evidence_ptrs=["m#a"],
+        ),
+        CandidateEvidence(
+            component="svc-a",
+            reason_family="cpu",
+            support_score=3.0,
+            modality="logs",
+            worker_id="agent_logs",
+            shard_id="logs",
+            evidence_ptrs=["l#a"],
+        ),
+    ]
+
+    result = interact_candidate_evidence(evidence, board, llm=None)
+
+    support_messages = [msg for msg in result.transcript if msg.get("verdict") == "support"]
+    assert {msg["support"] for msg in support_messages} == {3.0, 4.0}
+    assert all(msg["refute"] == 0.0 for msg in support_messages)
+    assert result.diagnostics["review_policy"] == "symmetric_evidence_budget"
+
+
+def test_disjoint_peer_scope_abstains_instead_of_inventing_counter_evidence():
+    board = Blackboard(case_id="opaque")
+    evidence = [
+        CandidateEvidence(
+            component="svc-a",
+            reason_family="cpu",
+            support_score=4.0,
+            modality="metrics",
+            worker_id="agent_metrics",
+            shard_id="metrics",
+            evidence_ptrs=["m#a"],
+        ),
+        CandidateEvidence(
+            component="svc-b",
+            reason_family="cpu",
+            support_score=3.0,
+            modality="logs",
+            worker_id="agent_logs",
+            shard_id="logs",
+            evidence_ptrs=["l#b"],
+        ),
+    ]
+
+    result = interact_candidate_evidence(evidence, board, llm=None)
+
+    challenge = next(
+        msg for msg in result.transcript
+        if msg.get("from") == "agent_metrics" and msg.get("to") == "agent_logs"
+    )
+    assert challenge["verdict"] == "abstain"
+    assert challenge["support"] == 0.0
+    assert challenge["refute"] == 0.0
+    refutations = [
+        item for item in result.evidence
+        if item.component == "svc-b" and item.worker_id == "agent_metrics_peer_review"
+    ]
+    assert refutations == []
+
+
+def test_candidate_fusion_subtracts_refuting_peer_evidence():
+    board = Blackboard(case_id="opaque")
+    evidence = [
+        CandidateEvidence(component="svc-a", reason_family="cpu", support_score=2.0, modality="metrics", shard_id="m"),
+        CandidateEvidence(component="svc-a", reason_family="cpu", refute_score=5.0, modality="logs", shard_id="l"),
+        CandidateEvidence(component="svc-b", reason_family="cpu", support_score=1.0, modality="traces", shard_id="t"),
+    ]
+
+    result = fuse_candidate_evidence(evidence, board)
+
+    assert result.winner.component == "svc-b"
+    assert result.vote_breakdown["svc-a"] < 0.0
+
+
+def test_targeted_evidence_verifier_promotes_higher_board_score_without_magic_thresholds():
+    board = Blackboard(case_id="opaque")
+    board.add(Finding(shard_id="m", modality="metrics", component="svc-a", signal="cpu", score=1.0))
+    board.add(Finding(shard_id="l", modality="logs", component="svc-b", signal="error", score=1.1))
+    top = CandidateRootCause(component="svc-a", reason="cpu", confidence=0.9, score=10.0)
+    runner = CandidateRootCause(component="svc-b", reason="log", confidence=0.1, score=1.0)
+
+    result = falsify(
+        board,
+        [top, runner],
+        top=top,
+        min_evidence_score=999.0,
+        runner_up_margin=999.0,
+    )
+
+    assert result.winner.component == "svc-b"
+    assert result.falsified is True
+    assert "decision_rule=promote_runner_if_board_score_strictly_higher" in result.checks
+    assert "deprecated_threshold_args_ignored=true" in result.checks
+
+
+def test_targeted_evidence_verifier_keeps_top_on_tie_or_weaker_runner():
+    board = Blackboard(case_id="opaque")
+    board.add(Finding(shard_id="m", modality="metrics", component="svc-a", signal="cpu", score=2.0))
+    board.add(Finding(shard_id="l", modality="logs", component="svc-b", signal="error", score=2.0))
+    top = CandidateRootCause(component="svc-a", reason="cpu", confidence=0.9, score=10.0)
+    runner = CandidateRootCause(component="svc-b", reason="log", confidence=0.1, score=1.0)
+
+    result = falsify(board, [top, runner], top=top)
+
+    assert result.winner.component == "svc-a"
+    assert result.falsified is False
+
+
 def test_shardrca_rcaeval_runner_returns_label_safe_prediction(tmp_path):
     case = _fixture_case(tmp_path)
 
@@ -154,6 +385,78 @@ def test_shardrca_rcaeval_runner_returns_label_safe_prediction(tmp_path):
     assert pred.accepted is True
     assert pred.total_tokens == 0
     assert pred.tool_calls >= 1
+
+
+def test_full_uses_holistic_head_and_retains_mechanical_ablation(tmp_path):
+    case = _fixture_case(tmp_path)
+    catalog = build_catalog_for_case(case, compute_ranges=False)
+
+    full = run_catalog(catalog, system="shardrca_full", llm=None, chunksize=10)
+    mechanical = run_catalog(catalog, system="shardrca_mechanical", llm=None, chunksize=10)
+
+    assert full.artifacts["decision_head"] == "grounded_multi_agent_panel"
+    assert "grounded panel decision" in full.notes
+    assert full.artifacts["architecture"] == "autonomous_peer_interaction_mas"
+    assert mechanical.artifacts["decision_head"] == "mechanical_fusion"
+    assert "mechanically fused" in mechanical.notes
+
+
+def test_grounded_panel_can_select_a_specialist_candidate():
+    board = Blackboard(case_id="opaque")
+    board.add(Finding(shard_id="metrics", modality="metrics", component="svc-b", signal="cpu", score=4.0,
+                      evidence_ptr="metrics#svc-b"))
+    mechanical = SynthesizerResult(
+        winner=CandidateRootCause(component="svc-a", reason="delay", confidence=0.6),
+        candidates=[CandidateRootCause(component="svc-a", reason="delay", confidence=0.6)],
+    )
+    holistic = SynthesizerResult(
+        winner=CandidateRootCause(component="svc-a", reason="delay", confidence=0.7),
+        candidates=[CandidateRootCause(component="svc-a", reason="delay", confidence=0.7)],
+    )
+    llm = LLMClient(
+        responder=lambda messages, tools: {
+            "content": json.dumps({
+                "root": "svc-b",
+                "reason": "cpu",
+                "confidence": 0.9,
+                "ranked_roots": ["svc-b", "svc-a"],
+                "rationale": "svc-b has the direct leading metric shift.",
+            })
+        },
+        cache_enabled=False,
+    )
+
+    result, diagnostic = adjudicate_panel(
+        mechanical,
+        holistic,
+        board,
+        interaction_transcript=[],
+        task_payload={"observability": {"top_metric_shifts": [
+            {"service": "svc-b", "metric": "cpu", "score": 9.0},
+            {"service": "svc-a", "metric": "latency", "score": 1.0},
+        ]}},
+        graph=None,
+        llm=llm,
+        k=1,
+    )
+
+    assert result.winner.component == "svc-b"
+    assert result.winner.evidence == ["metrics#svc-b"]
+    assert diagnostic["enabled"] is True
+    assert diagnostic["valid_votes"] == 1
+
+
+def test_metric_specialist_rejects_nonfinite_and_deduplicates_components():
+    result = metric_specialist({"observability": {"top_metric_shifts": [
+        {"service": "svc-a", "metric": "cpu", "score": float("nan")},
+        {"service": "svc-b", "metric": "cpu", "score": 8.0},
+        {"service": "svc-b", "metric": "mem", "score": 7.0},
+        {"service": "svc-c", "metric": "cpu", "score": 2.0},
+    ]}})
+
+    assert result["proposal"] == "svc-b"
+    assert [item["component"] for item in result["ranked_shifts"]] == ["svc-b", "svc-c"]
+    assert result["confidence_margin"] == 0.8
 
 
 def test_shardrca_local_fusion_runner_returns_prediction(tmp_path):
@@ -188,14 +491,14 @@ def test_single_sc_baseline_uses_same_mining_tools(tmp_path):
     assert pred.ranked_roots[0] == "adservice"
 
 
-def test_same_board_single_uses_label_safe_component_universe(tmp_path):
+def test_single_sc_uses_label_safe_component_universe(tmp_path):
     case = _fixture_case(tmp_path)
     metric_path = next((tmp_path / "RE1-OB" / "adservice_cpu" / "1").glob("*metric*.csv"))
     frame = pd.read_csv(metric_path)
     frame["ip-10-0-0-1_cpu"] = frame["adservice_cpu"] * 100
     frame.to_csv(metric_path, index=False)
 
-    pred = run_rcaeval_case(case, system="same_board_single", llm=None, chunksize=10)
+    pred = run_rcaeval_case(case, system="single_sc", llm=None, chunksize=10)
 
     assert pred.root == "adservice"
     assert "ip-10-0-0-1" not in pred.ranked_roots
@@ -388,6 +691,12 @@ def _analysis_row(case_id: str, system: str, hit: bool, mrr: float, *, tokens: i
         "tool_calls": 1,
         "latency_s": 1.0,
     }
+
+
+def _stats_from_values(values: list[float]) -> _Stats:
+    stats = _Stats()
+    stats.update(pd.Series(values))
+    return stats
 
 
 def _fixture_case(

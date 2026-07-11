@@ -1,0 +1,20 @@
+{
+  "fingerprint": "ac04b6921e3c1ebd59f513fdb8d87bb53721f0671d98e0707e7d5de6f6851238",
+  "row": {
+    "row_id": 35,
+    "task_index": "task_6",
+    "instruction": "During the time range of May 27, 2020, from 05:00 to 05:30, a single failure occurred within the system. The specific component responsible for this failure, as well as the underlying reason, are currently unknown. Your task is to identify the root cause component and determine the root cause reason.",
+    "prediction": "{\"1\": {\"root cause component\": \"os_009\", \"root cause reason\": \"CPU fault\"}}",
+    "scoring_points": "The only predicted root cause component is docker_001\nThe only predicted root cause reason is CPU fault\n",
+    "passed": "CPU fault",
+    "failed": "docker_001",
+    "score": 0.5,
+    "strict_correct": false,
+    "system": "single_react_sc",
+    "latency_s": 26.4,
+    "total_tokens": 20899,
+    "llm_calls": 9,
+    "tool_calls": 9,
+    "volume_bin": "high"
+  }
+}

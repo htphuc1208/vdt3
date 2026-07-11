@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-OB-emailservice_disk-3",
+  "runtime_case_id": "RE2-OB-d201de18203f",
+  "source": "RE2-OB",
+  "system": "no_shard",
+  "prior": "off",
+  "predicted_root": "emailservice",
+  "true_root": "emailservice",
+  "hit_at_1": 1,
+  "hit_at_3": 1,
+  "mrr": 1.0,
+  "total_tokens": 21669,
+  "llm_calls": 3,
+  "tool_calls": 4,
+  "latency_s": 5.77
+}

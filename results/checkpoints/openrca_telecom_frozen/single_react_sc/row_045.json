@@ -1,0 +1,20 @@
+{
+  "fingerprint": "ac04b6921e3c1ebd59f513fdb8d87bb53721f0671d98e0707e7d5de6f6851238",
+  "row": {
+    "row_id": 45,
+    "task_index": "task_1",
+    "instruction": "Within the specified time range of May 30, 2020, from 04:00 to 04:30, there was one failure reported. The exact root cause occurrence time is currently unknown. Please identify the root cause occurrence datetime.",
+    "prediction": "{\"1\": {\"root cause occurrence datetime\": \"2020-05-30 04:10:00\"}}",
+    "scoring_points": "The only root cause occurrence time is within 1 minutes (i.e., <=1min) of 2020-05-30 04:13:00\n",
+    "passed": "",
+    "failed": "2020-05-30 04:13:00",
+    "score": 0.0,
+    "strict_correct": false,
+    "system": "single_react_sc",
+    "latency_s": 18.41,
+    "total_tokens": 20337,
+    "llm_calls": 9,
+    "tool_calls": 9,
+    "volume_bin": "middle"
+  }
+}

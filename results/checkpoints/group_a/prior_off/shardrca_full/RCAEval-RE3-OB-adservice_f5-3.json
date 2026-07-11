@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE3-OB-adservice_f5-3",
+  "runtime_case_id": "RE3-OB-fad153dbd245",
+  "source": "RE3-OB",
+  "system": "shardrca_full",
+  "prior": "off",
+  "predicted_root": "emailservice",
+  "true_root": "adservice",
+  "hit_at_1": 0,
+  "hit_at_3": 1,
+  "mrr": 0.3333,
+  "total_tokens": 17996,
+  "llm_calls": 6,
+  "tool_calls": 7,
+  "latency_s": 40.07
+}

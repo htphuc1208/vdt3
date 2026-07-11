@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-route-service_socket-3",
+  "runtime_case_id": "RE2-TT-6847382fb9b6",
+  "source": "RE2-TT",
+  "system": "single_react_sc",
+  "prior": "on",
+  "predicted_root": "ts-route-service",
+  "true_root": "ts-route-service",
+  "hit_at_1": 1,
+  "hit_at_3": 1,
+  "mrr": 1.0,
+  "total_tokens": 30210,
+  "llm_calls": 9,
+  "tool_calls": 12,
+  "latency_s": 4.92
+}

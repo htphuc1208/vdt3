@@ -1,0 +1,20 @@
+{
+  "fingerprint": "ac04b6921e3c1ebd59f513fdb8d87bb53721f0671d98e0707e7d5de6f6851238",
+  "row": {
+    "row_id": 15,
+    "task_index": "task_7",
+    "instruction": "Within the time range of May 23, 2020, from 04:30 to 05:00, there was one failure reported. The component responsible for this failure, the exact time of occurrence, and the underlying reason are currently unknown. You are tasked with identifying the root cause occurrence datetime, the root cause component, and the root cause reason.",
+    "prediction": "{\"1\": {\"root cause occurrence datetime\": \"2020-05-23 04:47:51\", \"root cause component\": \"os_005\", \"root cause reason\": \"CPU fault\"}}",
+    "scoring_points": "The only root cause occurrence time is within 1 minutes (i.e., <=1min) of 2020-05-23 04:47:00\nThe only predicted root cause component is docker_006\nThe only predicted root cause reason is CPU fault\n",
+    "passed": "CPU fault\n2020-05-23 04:47:00",
+    "failed": "docker_006",
+    "score": 0.67,
+    "strict_correct": false,
+    "system": "single_react_sc",
+    "latency_s": 29.44,
+    "total_tokens": 20952,
+    "llm_calls": 9,
+    "tool_calls": 9,
+    "volume_bin": "high"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "fingerprint": "ac04b6921e3c1ebd59f513fdb8d87bb53721f0671d98e0707e7d5de6f6851238",
+  "row": {
+    "row_id": 20,
+    "task_index": "task_2",
+    "instruction": "There was a failure that occurred within the specified time range of May 25, 2020, from 03:30 to 04:00. The exact reason for this failure is unknown, complicating the failure diagnosis process. You are tasked with identifying the root cause reason.",
+    "prediction": "{\"1\": {}}",
+    "scoring_points": "The only predicted root cause reason is network loss\n",
+    "passed": "",
+    "failed": "network loss",
+    "score": 0.0,
+    "strict_correct": false,
+    "system": "single_react_sc",
+    "latency_s": 25.58,
+    "total_tokens": 20668,
+    "llm_calls": 9,
+    "tool_calls": 9,
+    "volume_bin": "low"
+  }
+}

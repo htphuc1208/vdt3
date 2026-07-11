@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE3-SS-front-end_f1-2",
+  "runtime_case_id": "RE3-SS-6d8bb2308159",
+  "source": "RE3-SS",
+  "system": "single_equal_tokens",
+  "prior": "off",
+  "predicted_root": "front-end",
+  "true_root": "front-end",
+  "hit_at_1": 1,
+  "hit_at_3": 1,
+  "mrr": 1.0,
+  "total_tokens": 19053,
+  "llm_calls": 3,
+  "tool_calls": 7,
+  "latency_s": 10.83
+}

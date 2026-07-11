@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-train-service_cpu-1",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-price-service",
+  "ranked_roots": [
+    "ts-price-service",
+    "ts-config-service",
+    "ts-basic-service",
+    "ts-ticketinfo-service",
+    "ts-seat-service",
+    "ts-travel-service",
+    "ts-user-mongo",
+    "ts-food-map-service",
+    "ts-assurance-mongo",
+    "ts-contacts-mongo"
+  ],
+  "fault_type": "unknown",
+  "accepted": true,
+  "confidence": 0.32867186741638454,
+  "latency_s": 177.65,
+  "total_tokens": 276195,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-price-service; no promotion."
+}

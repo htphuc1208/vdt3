@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-SS-user_socket-3",
+  "runtime_case_id": "RE2-SS-ad21d3a4f755",
+  "source": "RE2-SS",
+  "system": "single_react_sc",
+  "prior": "off",
+  "predicted_root": "carts-db",
+  "true_root": "user",
+  "hit_at_1": 0,
+  "hit_at_3": 0,
+  "mrr": 0.0,
+  "total_tokens": 13149,
+  "llm_calls": 9,
+  "tool_calls": 9,
+  "latency_s": 8.64
+}

@@ -5,7 +5,6 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-from ..agents.consensus import tally_votes
 from ..llm import LLMClient, extract_json
 from ..schemas import Hypothesis, UsageStats
 from .board import Blackboard, CandidateRootCause, Finding
@@ -100,7 +99,7 @@ def fuse_candidates(candidates: list[CandidateRootCause]) -> tuple[CandidateRoot
         )
         for idx, candidate in enumerate(candidates)
     ]
-    scores, _ = tally_votes(hypotheses, calibration={})
+    scores, _ = _tally_candidate_votes(hypotheses)
     top_component = max(scores, key=scores.get) if scores else candidates[0].component
     backers = [candidate for candidate in candidates if candidate.component == top_component]
     chosen = max(backers or candidates, key=lambda item: (item.confidence, item.score))
@@ -117,6 +116,18 @@ def fuse_candidates(candidates: list[CandidateRootCause]) -> tuple[CandidateRoot
         ),
         {key: round(value, 4) for key, value in scores.items()},
     )
+
+
+def _tally_candidate_votes(hypotheses: list[Hypothesis]) -> tuple[dict[str, float], dict[str, list[Hypothesis]]]:
+    scores: dict[str, float] = {}
+    backers: dict[str, list[Hypothesis]] = {}
+    for hypothesis in hypotheses:
+        component = hypothesis.faulty_element_id or "UNKNOWN"
+        evidence_bonus = 0.05 if hypothesis.evidence else 0.0
+        score = max(0.0, float(hypothesis.confidence)) + evidence_bonus
+        scores[component] = scores.get(component, 0.0) + score
+        backers.setdefault(component, []).append(hypothesis)
+    return scores, backers
 
 
 def infer_reason(findings: list[Finding]) -> str:

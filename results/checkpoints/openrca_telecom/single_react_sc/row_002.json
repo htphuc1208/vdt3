@@ -1,0 +1,20 @@
+{
+  "fingerprint": "e2c13a541bdd10451f8b4a53885c49379e2c1143957e90768101f0b24720b01a",
+  "row": {
+    "row_id": 2,
+    "task_index": "task_2",
+    "instruction": "On April 11, 2020, between 02:00 and 02:30, a failure occurred in the system. The number of failures recorded within this time range is 1. The reason for the root cause of this failure is currently unknown and needs to be determined.",
+    "prediction": "{\"1\": {}}",
+    "scoring_points": "The only predicted root cause reason is db connection limit\n",
+    "passed": "",
+    "failed": "db connection limit",
+    "score": 0.0,
+    "strict_correct": false,
+    "system": "single_react_sc",
+    "latency_s": 1.56,
+    "total_tokens": 0,
+    "llm_calls": 0,
+    "tool_calls": 3,
+    "volume_bin": "high"
+  }
+}

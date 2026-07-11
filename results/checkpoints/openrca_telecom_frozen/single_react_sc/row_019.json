@@ -1,0 +1,20 @@
+{
+  "fingerprint": "ac04b6921e3c1ebd59f513fdb8d87bb53721f0671d98e0707e7d5de6f6851238",
+  "row": {
+    "row_id": 19,
+    "task_index": "task_4",
+    "instruction": "On May 25, 2020, between 01:30 and 02:00, a failure occurred within the system. The exact time at which the root cause occurred and the reason for this failure are currently unknown. Please identify the root cause occurrence datetime and the root cause reason.",
+    "prediction": "{\"1\": {\"root cause occurrence datetime\": \"2020-05-25 01:40:00\", \"root cause reason\": \"CPU fault\"}}",
+    "scoring_points": "The only root cause occurrence time is within 1 minutes (i.e., <=1min) of 2020-05-25 01:47:00\nThe only predicted root cause reason is network delay\n",
+    "passed": "",
+    "failed": "2020-05-25 01:47:00\nnetwork delay",
+    "score": 0.0,
+    "strict_correct": false,
+    "system": "single_react_sc",
+    "latency_s": 19.86,
+    "total_tokens": 20280,
+    "llm_calls": 9,
+    "tool_calls": 9,
+    "volume_bin": "high"
+  }
+}

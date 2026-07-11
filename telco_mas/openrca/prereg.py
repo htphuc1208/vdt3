@@ -18,11 +18,11 @@ from .sandbox import source_image_tag
 
 DEFAULT_SYSTEMS = [
     "single_react_sc",
-    "same_board_single",
     "rca_agent_replica",
     "shardrca_full",
     "no_falsifier",
     "no_topology",
+    "no_interaction",
     "no_refinement",
 ]
 
@@ -112,13 +112,31 @@ def build_preregistration(
         "system_roles": {
             "operational_single": ["single_react_sc"],
             "architecture_baseline": ["rca_agent_replica"],
-            "diagnostic_oracle": ["same_board_single"],
             "treatment": "shardrca_full",
         },
         "algorithm": {
             "id": resolved_algorithm_id,
             "source_manifest_sha256": algorithm["sha256"],
             "files": algorithm["files"],
+        },
+        "overfit_guard": {
+            "fitted_weights_allowed": False,
+            "fusion_weights": "default_no_fit",
+            "no_post_hoc_weight_fit": True,
+            "no_post_hoc_row_filtering": True,
+            "required_ablations": [
+                "no_interaction",
+                "no_falsifier",
+                "no_topology",
+                "no_refinement",
+            ],
+            "required_analysis_checks": [
+                "weights_declared_no_fit",
+                "candidate_catalog_not_label_derived",
+                "strongest_single_baseline",
+                "architecture_baseline_comparison",
+                "operational_single_comparison",
+            ],
         },
         "model": {
             "name": model or os.getenv("OPENAI_MODEL") or "configured runtime model",
@@ -144,10 +162,10 @@ def build_preregistration(
                     "sandbox_image": source_image_tag(),
                 },
                 "single_react_sc": {"runs": 3, "tool_calls_per_run": 3},
-                "same_board_single": {"syntheses": 3},
                 "shardrca_full": {"workers": 5, "falsifier_calls": 1},
                 "no_falsifier": {"workers": 5, "falsifier_calls": 0},
                 "no_topology": {"workers": 5, "topology_temporal_rerank": False},
+                "no_interaction": {"workers": 5, "autonomous_peer_interaction": False},
                 "no_refinement": {"workers": 5, "iterative_refinement": False},
             },
         },
@@ -186,9 +204,8 @@ def build_preregistration(
                 "absolute strict accuracy or >=20% relative error reduction"
             ),
             "significance": "Holm-adjusted paired exact p <= 0.05 for both confirmatory comparisons",
-            "strong_mechanism": "also beats same_board_single and has positive high-volume-bin delta",
+            "strong_mechanism": "also has a positive high-volume-bin delta",
             "diagnostics_required": [
-                "same_board_single",
                 "high_volume_bin",
                 "tokens",
                 "tool_calls",
@@ -196,6 +213,7 @@ def build_preregistration(
                 "latency_s",
                 "no_falsifier",
                 "no_topology",
+                "no_interaction",
                 "no_refinement",
             ],
         },

@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-SS-payment_mem-2",
+  "runtime_case_id": "RE2-SS-53abdc3df594",
+  "source": "RE2-SS",
+  "system": "shardrca_full",
+  "prior": "off",
+  "predicted_root": "carts",
+  "true_root": "payment",
+  "hit_at_1": 0,
+  "hit_at_3": 0,
+  "mrr": 0.1667,
+  "total_tokens": 0,
+  "llm_calls": 0,
+  "tool_calls": 7,
+  "latency_s": 3.15
+}

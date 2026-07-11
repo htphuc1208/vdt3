@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-SS-orders_mem-3",
+  "runtime_case_id": "RE2-SS-e4cd9511a430",
+  "source": "RE2-SS",
+  "system": "shardrca_full",
+  "prior": "off",
+  "predicted_root": "user",
+  "true_root": "orders",
+  "hit_at_1": 0,
+  "hit_at_3": 0,
+  "mrr": 0.25,
+  "total_tokens": 0,
+  "llm_calls": 0,
+  "tool_calls": 7,
+  "latency_s": 2.9
+}

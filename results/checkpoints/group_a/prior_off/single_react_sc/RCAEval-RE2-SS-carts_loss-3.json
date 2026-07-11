@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-SS-carts_loss-3",
+  "runtime_case_id": "RE2-SS-07d22130e4d9",
+  "source": "RE2-SS",
+  "system": "single_react_sc",
+  "prior": "off",
+  "predicted_root": "catalogue",
+  "true_root": "carts",
+  "hit_at_1": 0,
+  "hit_at_3": 1,
+  "mrr": 0.5,
+  "total_tokens": 12510,
+  "llm_calls": 9,
+  "tool_calls": 9,
+  "latency_s": 9.14
+}

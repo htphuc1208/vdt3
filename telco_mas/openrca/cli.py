@@ -63,6 +63,7 @@ def main(argv: list[str] | None = None) -> int:
         prereg = _load_prereg(args.prereg) if args.prereg else None
         if prereg:
             _verify_prereg(dataset, prereg)
+            _verify_overfit_prereg(prereg)
             prereg_row_ids = list(prereg["row_selection"]["row_ids"])
             prereg_systems = list(prereg["systems"])
             if args.row_ids and _parse_row_ids(args.row_ids) != prereg_row_ids:
@@ -93,6 +94,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if not systems:
         print("ERROR: no systems selected", file=sys.stderr)
+        return 2
+    smoke_incompatible = sorted(set(systems) & OPENRCA_AGENT_SYSTEMS)
+    if args.mode != "llm" and smoke_incompatible:
+        print(
+            "ERROR: rca_agent_replica requires prepared telemetry and a live LLM. "
+            "Use --mode llm --confirm-live-llm, or omit rca_agent_replica from smoke runs.",
+            file=sys.stderr,
+        )
         return 2
     if args.mode == "llm" and not args.confirm_live_llm:
         print(
@@ -243,6 +252,7 @@ def main(argv: list[str] | None = None) -> int:
             "system": actual_systems[0] if len(actual_systems) == 1 else None,
             "prereg": args.prereg,
             "execution_fingerprint": fingerprint,
+            "shardrca_weights": os.environ.get("SHARDRCA_WEIGHTS") or "(default_no_fit)",
             "prepared_manifest": str(prepared.manifest_path) if prepared else None,
             "complete": len(rows) == len(selected_tasks) * len(systems),
             "expected_result_rows": len(selected_tasks) * len(systems),
@@ -374,6 +384,15 @@ def _verify_prereg(dataset: OpenRCADataset, prereg: dict[str, Any]) -> None:
         raise ValueError("OpenRCA algorithm source differs from preregistration")
 
 
+def _verify_overfit_prereg(prereg: dict[str, Any]) -> None:
+    guard = prereg.get("overfit_guard") if isinstance(prereg.get("overfit_guard"), dict) else {}
+    if guard.get("fitted_weights_allowed") is False and os.environ.get("SHARDRCA_WEIGHTS"):
+        raise ValueError(
+            "Frozen OpenRCA preregistration forbids fitted SHARDRCA_WEIGHTS artifacts; "
+            "unset SHARDRCA_WEIGHTS before running the claim protocol"
+        )
+
+
 def _verify_execution_settings(prereg: dict[str, Any], llm: LLMClient, *, no_cache: bool) -> None:
     expected = prereg.get("execution", prereg.get("model", {}))
     expected_model = expected.get("model") or expected.get("name")
@@ -413,6 +432,8 @@ def _execution_fingerprint(
         "temperature": llm.settings.temperature if llm else None,
         "chunksize": chunksize,
     }
+    if os.environ.get("SHARDRCA_WEIGHTS"):
+        payload["shardrca_weights"] = os.environ["SHARDRCA_WEIGHTS"]
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()

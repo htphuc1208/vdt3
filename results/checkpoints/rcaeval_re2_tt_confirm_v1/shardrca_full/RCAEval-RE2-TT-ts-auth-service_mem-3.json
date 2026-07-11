@@ -1,0 +1,28 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_mem-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-auth-service",
+  "ranked_roots": [
+    "ts-auth-service",
+    "ts-station-service",
+    "ts-config-service",
+    "ts-admin-user-service",
+    "ts-order-other-service",
+    "ts-price-service",
+    "ts-user-service",
+    "ts-consign-price-service",
+    "ts-food-service",
+    "ts-travel2-service",
+    "ts-execute-service",
+    "ts-notification-service",
+    "ts-route-plan-service"
+  ],
+  "fault_type": "disk",
+  "accepted": true,
+  "confidence": 0.6899976029432171,
+  "latency_s": 216.69,
+  "total_tokens": 281838,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-auth-service; no promotion.; rcaeval_metric_prior=mas_primary_metric_prior_secondary(root=ts-station-service, margin=0.5072, threshold=0.625)"
+}

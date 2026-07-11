@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-OB-checkoutservice_socket-2",
+  "runtime_case_id": "RE2-OB-a64fa5d5d534",
+  "source": "RE2-OB",
+  "system": "no_interaction",
+  "prior": "off",
+  "predicted_root": "checkoutservice",
+  "true_root": "checkoutservice",
+  "hit_at_1": 1,
+  "hit_at_3": 1,
+  "mrr": 1.0,
+  "total_tokens": 0,
+  "llm_calls": 0,
+  "tool_calls": 7,
+  "latency_s": 5.88
+}

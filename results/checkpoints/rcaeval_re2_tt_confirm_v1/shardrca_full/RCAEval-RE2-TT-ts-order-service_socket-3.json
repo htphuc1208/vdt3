@@ -1,0 +1,32 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_socket-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-order-service",
+  "ranked_roots": [
+    "ts-order-service",
+    "ts-notification-mongo",
+    "ts-payment-mongo",
+    "ts-seat-service",
+    "ts-travel-service",
+    "ts-payment-service",
+    "ts-food-service",
+    "ts-inside-payment-service",
+    "ts-security-service",
+    "ts-consign-service",
+    "ts-ticketinfo-service",
+    "ts-verification-code-service",
+    "ts-preserve-service",
+    "ts-price-service",
+    "ts-food-map-service",
+    "ts-basic-service",
+    "ts-station-service"
+  ],
+  "fault_type": "cpu",
+  "accepted": true,
+  "confidence": 0.9752,
+  "latency_s": 233.11,
+  "total_tokens": 273231,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-notification-mongo; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-order-service, margin=0.9752, threshold=0.625)"
+}

@@ -1,0 +1,30 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-route-service_delay-2",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-travel2-service",
+  "ranked_roots": [
+    "ts-travel2-service",
+    "ts-admin-travel-service",
+    "ts-ui-dashboard",
+    "ts-travel-service",
+    "ts-route-service",
+    "ts-price-mongo",
+    "ts-order-service",
+    "ts-seat-service",
+    "ts-inside-payment-service",
+    "ts-auth-mongo",
+    "ts-consign-service",
+    "ts-payment-service",
+    "ts-food-service",
+    "ts-route-mongo",
+    "ts-order-other-mongo"
+  ],
+  "fault_type": "delay",
+  "accepted": true,
+  "confidence": 0.46556885302715584,
+  "latency_s": 364.41,
+  "total_tokens": 283785,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-travel2-service; no promotion.; rcaeval_metric_prior=mas_primary_metric_prior_secondary(root=ts-admin-travel-service, margin=0.592, threshold=0.625)"
+}

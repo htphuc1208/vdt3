@@ -12,6 +12,9 @@ from ..evaluation.stats import aggregate_ci
 from ..evaluation.stats import paired_bootstrap_effect, paired_mcnemar
 
 
+NO_FIT_WEIGHT_SENTINELS = {"", "(default)", "(default_no_fit)", "default", "default_no_fit", "none", "null"}
+
+
 def analyze_results(path: str | Path, *, baseline: str = "strongest_single", treatment: str = "rcaeval_shardrca_full") -> dict[str, Any]:
     data = json.loads(Path(path).read_text())
     rows = data.get("rows", [])
@@ -66,6 +69,11 @@ def analyze_results(path: str | Path, *, baseline: str = "strongest_single", tre
             "tool_calls": sum(int(row.get("tool_calls") or 0) for row in sr),
             "avg_latency_s": round(sum(float(row.get("latency_s") or 0.0) for row in sr) / len(sr), 3) if sr else 0.0,
         }
+    meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
+    overfit_guard = _overfit_guard(systems, meta)
+    clear_win_gate = _clear_win_gate(summary, paired, baseline, treatment)
+    clear_win_gate["overfit_guard_passed"] = overfit_guard["passed"]
+    clear_win_gate["passed"] = bool(clear_win_gate["passed"] and overfit_guard["passed"])
 
     return {
         "benchmark": "rcaeval",
@@ -77,7 +85,8 @@ def analyze_results(path: str | Path, *, baseline: str = "strongest_single", tre
         "summary": data.get("summary", {}),
         "computed_summary": summary,
         "paired": paired,
-        "clear_win_gate": _clear_win_gate(summary, paired, baseline, treatment),
+        "clear_win_gate": clear_win_gate,
+        "overfit_guard": overfit_guard,
         "disagreement_count": len(disagreements),
         "disagreements": disagreements[:25],
         "usage": usage,
@@ -86,6 +95,26 @@ def analyze_results(path: str | Path, *, baseline: str = "strongest_single", tre
             "Use as appendix/supporting evidence unless paired with real telecom or official telco fallback data.",
             "The headline comparison must use --baseline strongest_single or an explicitly justified stronger single.",
         ],
+    }
+
+
+def _overfit_guard(systems: list[str], meta: dict[str, Any]) -> dict[str, Any]:
+    source = str(meta.get("shardrca_weights") or "(missing)")
+    checks = {
+        "weights_declared_no_fit": source.strip().lower() in NO_FIT_WEIGHT_SENTINELS,
+        "no_interaction_ablation": "rcaeval_no_interaction" in systems or "no_interaction" in systems,
+    }
+    reasons = []
+    if not checks["weights_declared_no_fit"]:
+        reasons.append("result metadata must declare default no-fit fusion weights")
+    if not checks["no_interaction_ablation"]:
+        reasons.append("missing no_interaction ablation")
+    return {
+        "passed": all(checks.values()),
+        "checks": checks,
+        "fusion_weight_source": source,
+        "reasons": reasons,
+        "required": "RCAEval claim evidence must use default no-fit weights and include no_interaction.",
     }
 
 

@@ -1,0 +1,32 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-route-service_mem-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-route-service",
+  "ranked_roots": [
+    "ts-route-service",
+    "ts-order-other-mongo",
+    "ts-station-service",
+    "ts-order-service",
+    "ts-travel2-service",
+    "ts-inside-payment-service",
+    "ts-assurance-service",
+    "ts-security-service",
+    "ts-travel-service",
+    "ts-seat-service",
+    "ts-rebook-service",
+    "ts-travel-plan-service",
+    "ts-order-other-service",
+    "ts-cancel-service",
+    "ts-food-service",
+    "ts-preserve-other-service",
+    "ts-auth-service"
+  ],
+  "fault_type": "disk",
+  "accepted": true,
+  "confidence": 0.8221627654385101,
+  "latency_s": 734.0,
+  "total_tokens": 285459,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-route-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-route-service, margin=0.7701, threshold=0.625)"
+}

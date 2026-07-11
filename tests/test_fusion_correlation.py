@@ -1,10 +1,11 @@
-"""B: correlation-aware fusion must not treat agreeing workers as independent.
+"""B: optional correlation discount must not treat agreeing workers as independent.
 
 Equal-weight product-of-experts multiplies every worker's likelihood, so N
 workers that all flag the *same* propagated root (as on the real telecom path,
 where every worker shares the full candidate scope) drive the fused posterior
 toward certainty even though they carry roughly one source's worth of
-independent information. The effective-number-of-experts discount shrinks that
+independent information. The optional effective-number-of-experts discount reads
+positive Pearson correlation from component posterior vectors, shrinks that
 over-confidence when workers agree, and leaves genuinely disagreeing workers at
 full weight.
 """

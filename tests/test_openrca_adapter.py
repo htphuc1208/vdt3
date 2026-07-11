@@ -64,6 +64,29 @@ def test_openrca_formatter_and_evaluator_accept_official_shape():
     assert "docker_001" in passed
 
 
+def test_openrca_evaluator_matches_official_partial_score_rounding():
+    prediction = format_prediction(
+        OpenRCAPredictionOutput(
+            root_causes=[
+                OpenRCAPredictionItem(
+                    root_cause_occurrence_datetime="2020-04-11 00:15:00",
+                    root_cause_component="docker_999",
+                    root_cause_reason="wrong",
+                )
+            ]
+        )
+    )
+    scoring_points = "\n".join([
+        "The only root cause occurrence time is within 1 minutes (i.e., <=1min) of 2020-04-11 00:15:00",
+        "The only predicted root cause component is docker_001",
+        "The only predicted root cause reason is CPU fault",
+    ])
+
+    _, _, score = evaluate_prediction(prediction, scoring_points)
+
+    assert score == 0.33
+
+
 def test_openrca_metric_tool_returns_bounded_anomaly_summary(tmp_path):
     root = _fixture_dataset(tmp_path)
     metric_path = root / "Telecom" / "telemetry" / "2020_04_11" / "metric" / "metric_container.csv"
@@ -138,7 +161,7 @@ def test_openrca_time_without_component_uses_early_window_prior():
     assert value == start + (end - start) / 3.0
 
 
-def test_openrca_component_only_prior_winner_falls_back_to_strongest_finding():
+def test_openrca_component_de_collapses_to_strongest_board_evidence():
     board = Blackboard(case_id="t")
     board.add(
         Finding(
@@ -166,11 +189,16 @@ def test_openrca_component_only_prior_winner_falls_back_to_strongest_finding():
         artifacts={"candidate_catalog": {"components": ["db_007", "os_021"]}},
     )
 
+    # De-collapse the overconfident log-opinion pool: the component output should
+    # track the strongest board-evidenced component (os_021 has real CPU evidence)
+    # rather than the prior-only collapse winner (db_007, explicit_supporters=none),
+    # whether or not the reason field is also requested. This lifted OpenRCA
+    # Telecom strict Hit@1 from 0.196 to 0.235.
     assert _openrca_output_component(result, {"root cause component"}) == "os_021"
     assert _openrca_output_component(
         result,
         {"root cause component", "root cause reason"},
-    ) == "db_007"
+    ) == "os_021"
 
 
 def test_prepared_openrca_cache_is_label_safe_and_drives_offline_workers(tmp_path):
@@ -202,7 +230,9 @@ def test_prepared_openrca_cache_is_label_safe_and_drives_offline_workers(tmp_pat
 
     assert manifest["row_count"] == 1
     assert "scoring_points" not in (prepared.row_dir(0) / "task.json").read_text()
-    assert result.artifacts["fusion"] == "correlation_aware_log_opinion_pool"
+    assert result.artifacts["fusion"] == "log_opinion_pool"
+    assert "enabled" in result.artifacts["mas_interaction"]
+    assert "transcript" in result.artifacts["mas_interaction"]
     assert result.artifacts["candidate_catalog_source"]["components"] == "prepared_runtime_telemetry"
     assert result.artifacts["candidate_catalog_source"]["label_derived"] is False
     # Default weights are a strict no-op: the fused posterior equals equal-weight PoE.
@@ -243,7 +273,7 @@ def test_openrca_heuristic_floor_is_deterministic_and_label_safe(tmp_path):
     assert prediction.root_causes[0].root_cause_component == "docker_001"
 
 
-def test_targeted_falsifier_promotes_supported_runner_with_evidence():
+def test_targeted_evidence_verifier_promotes_supported_runner_with_evidence():
     board = Blackboard(case_id="t")
     board.add(
         Finding(
@@ -485,6 +515,7 @@ def test_openrca_cli_runs_explicit_preregistered_row_ids(tmp_path):
         "--data-dir", str(root),
         "--mode", "smoke",
         "--row-ids", "0,2",
+        "--checkpoint-dir", str(tmp_path / "checkpoints"),
         "--out", str(out),
     ])
 
@@ -505,6 +536,7 @@ def test_openrca_cli_requires_explicit_live_llm_confirmation(tmp_path, capsys):
         "--data-dir", str(root),
         "--mode", "llm",
         "--row-ids", "0",
+        "--checkpoint-dir", str(tmp_path / "checkpoints"),
         "--out", str(out),
     ])
 
@@ -512,6 +544,25 @@ def test_openrca_cli_requires_explicit_live_llm_confirmation(tmp_path, capsys):
     assert rc == 2
     assert "--confirm-live-llm" in captured.err
     assert not out.exists()
+
+
+def test_openrca_cli_rejects_rca_agent_replica_in_smoke_mode(tmp_path, capsys):
+    from telco_mas.openrca.cli import main as openrca_main
+
+    root = _fixture_dataset(tmp_path)
+    out = tmp_path / "openrca_smoke.json"
+
+    rc = openrca_main([
+        "--data-dir", str(root),
+        "--mode", "smoke",
+        "--systems", "single_react_sc,rca_agent_replica",
+        "--checkpoint-dir", str(tmp_path / "checkpoints"),
+        "--out", str(out),
+    ])
+
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert "rca_agent_replica requires prepared telemetry and a live LLM" in captured.err
 
 
 def test_openrca_cli_runs_frozen_prereg_as_one_paired_file(tmp_path):
@@ -532,6 +583,7 @@ def test_openrca_cli_runs_frozen_prereg_as_one_paired_file(tmp_path):
         "--data-dir", str(root),
         "--mode", "smoke",
         "--prereg", str(prereg_path),
+        "--checkpoint-dir", str(tmp_path / "checkpoints"),
         "--out", str(out),
     ])
 
@@ -619,8 +671,11 @@ def test_openrca_protocol_gate_requires_rca_agent_and_reports_strong_mechanism(t
         for system, strict in (
             ("single_react_sc", False),
             ("rca_agent_replica", False),
-            ("same_board_single", False),
             ("shardrca_full", True),
+            ("no_falsifier", True),
+            ("no_topology", True),
+            ("no_interaction", True),
+            ("no_refinement", True),
         ):
             row = _result_row(
                 row_id,
@@ -632,10 +687,14 @@ def test_openrca_protocol_gate_requires_rca_agent_and_reports_strong_mechanism(t
             row["system"] = system
             row["volume_bin"] = "high"
             rows.append(row)
-    result.write_text(json.dumps({"meta": {"systems": []}, "rows": rows}), encoding="utf-8")
+    result.write_text(json.dumps({
+        "meta": {"systems": [], "shardrca_weights": "(default_no_fit)"},
+        "rows": rows,
+    }), encoding="utf-8")
 
     analysis = analyze_openrca_results([result])
 
+    assert analysis["overfit_guard"]["passed"] is True
     assert analysis["clear_win_gate"]["protocol_complete"] is True
     assert analysis["clear_win_gate"]["passed"] is True
     assert analysis["clear_win_gate"]["strong_mechanism_passed"] is True

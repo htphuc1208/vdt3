@@ -144,7 +144,7 @@ def build_prereg_draft(
         "single_react",
         "single_react_sc",
         "code_retrieval_single",
-        "same_board_single",
+        "no_interaction",
     ]
     n = split["meta"]["n_selected"]
     case_ids = [case["runtime_case_id"] for case in split["cases"]]
@@ -178,8 +178,8 @@ def build_prereg_draft(
         "stopping_rule": "run the frozen case list exactly once; no p-value extension, no post-hoc filtering",
         "power_analysis": power_analysis(n),
         "freeze_preconditions": [
-            "fusion weights fitted on a disjoint validation split and frozen to fusion_weights_artifact",
-            "algorithm_id set to the clean commit SHA after the fit",
+            "default no-fit fusion weights frozen by the preregistration, unless a separate preregistration freezes a disjoint validation artifact before the holdout",
+            "algorithm_id set to the clean commit SHA after validation/finalization",
             "MDE at n is at or below the effect the high-volume mechanism is expected to produce",
         ],
         "label_safety": split["meta"]["label_safety"],

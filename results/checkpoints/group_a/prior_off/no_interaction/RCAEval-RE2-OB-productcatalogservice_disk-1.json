@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-OB-productcatalogservice_disk-1",
+  "runtime_case_id": "RE2-OB-87a319153454",
+  "source": "RE2-OB",
+  "system": "no_interaction",
+  "prior": "off",
+  "predicted_root": "recommendationservice",
+  "true_root": "productcatalogservice",
+  "hit_at_1": 0,
+  "hit_at_3": 1,
+  "mrr": 0.5,
+  "total_tokens": 0,
+  "llm_calls": 0,
+  "tool_calls": 7,
+  "latency_s": 5.47
+}

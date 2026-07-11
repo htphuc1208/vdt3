@@ -1,4 +1,4 @@
-"""Audit whether current artifacts justify a MAS-over-single claim."""
+"""Audit whether current paper artifacts justify a ShardRCA claim."""
 from __future__ import annotations
 
 import argparse
@@ -7,10 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-
 HEADLINE_BENCHMARKS = {"openrca_telecom", "tn_rca530"}
-FALLBACK_BENCHMARKS = {"telelogs_agent", "telelogs"}
-SYNTHETIC_BENCHMARKS = {"telecomts", "synthetic_telco", "synthetic_telco_v3", "synthetic_telco_v4"}
 SUPPORTING_ONLY_BENCHMARKS = {"rcaeval"}
 
 
@@ -20,29 +17,13 @@ def audit_claim(
     analysis_paths: list[str | Path] | None = None,
     allow_synthetic: bool = False,
 ) -> dict[str, Any]:
+    del allow_synthetic
     readiness = _load_json(readiness_path)
     analyses = [_audit_analysis(path, readiness) for path in (analysis_paths or [])]
     valid = [item for item in analyses if item["valid_evidence"]]
     headline = [item for item in valid if item["benchmark"] in HEADLINE_BENCHMARKS]
-    fallback = [item for item in valid if item["benchmark"] in FALLBACK_BENCHMARKS]
-    synthetic = [item for item in valid if item["benchmark"] in SYNTHETIC_BENCHMARKS]
-
-    if headline:
-        claim_allowed = True
-        claim_tier = "headline_real_or_operational"
-        selected = headline[0]
-    elif fallback:
-        claim_allowed = True
-        claim_tier = "official_telco_synthetic_fallback"
-        selected = fallback[0]
-    elif allow_synthetic and synthetic:
-        claim_allowed = True
-        claim_tier = "last_resort_synthetic_only"
-        selected = synthetic[0]
-    else:
-        claim_allowed = False
-        claim_tier = "none"
-        selected = None
+    claim_allowed = bool(headline)
+    selected = headline[0] if headline else None
 
     blockers = _readiness_blockers(readiness)
     if not analysis_paths:
@@ -53,32 +34,33 @@ def audit_claim(
     return {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "claim_allowed": claim_allowed,
-        "claim_tier": claim_tier,
+        "claim_tier": "headline_real_or_operational" if claim_allowed else "none",
         "selected_evidence": selected,
         "readiness": {
             "headline_ready": bool(readiness.get("headline_ready")),
-            "fallback_ready": bool(readiness.get("fallback_ready")),
-            "synthetic_ready": bool(readiness.get("synthetic_ready")),
+            "fallback_ready": False,
+            "synthetic_ready": False,
             "next_action": readiness.get("next_action"),
         },
         "analysis_audits": analyses,
-        "blockers": blockers if not claim_allowed else [],
+        "blockers": [] if claim_allowed else blockers,
         "required_for_claim": [
-            "benchmark data/prereg readiness is true for the claimed tier",
+            "OpenRCA or TN-RCA530 readiness is true for the claimed headline tier",
             "paired result analysis clear_win_gate.passed is true",
             "analysis baseline was resolved by --baseline strongest_single",
-            "treatment system is the MAS system shardrca_full/full/multi_agent",
-            "TeleLogsAgent analysis must be official HTTP-tool mode, not staged profile/llm mode",
-            "TelecomTS can only support an explicitly synthetic-only claim and never a real-fault RCA claim",
+            "treatment system is shardrca_full/full/multi_agent",
+            "overfit_guard.passed is true when present",
+            "OpenRCA evidence includes no_interaction/no_topology/no_falsifier/no_refinement ablations and default no-fit weights",
+            "runtime candidate catalogs are not label-derived",
         ],
     }
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Audit whether result artifacts justify a MAS win claim.")
+    parser = argparse.ArgumentParser(description="Audit whether result artifacts justify a ShardRCA win claim.")
     parser.add_argument("--readiness", default="results/benchmark_readiness.json")
     parser.add_argument("--analysis", action="append", default=[], help="result analysis JSON path; repeatable")
-    parser.add_argument("--allow-synthetic", action="store_true")
+    parser.add_argument("--allow-synthetic", action="store_true", help="accepted for CLI compatibility; ignored")
     parser.add_argument("--out", default=None)
     parser.add_argument("--strict", action="store_true", help="exit 2 unless claim_allowed is true")
     args = parser.parse_args(argv)
@@ -110,11 +92,10 @@ def _audit_analysis(path: str | Path, readiness: dict[str, Any]) -> dict[str, An
     payload = _load_json(path)
     benchmark = _infer_benchmark(path, payload)
     gate = payload.get("clear_win_gate") if isinstance(payload.get("clear_win_gate"), dict) else {}
+    overfit_guard = payload.get("overfit_guard") if isinstance(payload.get("overfit_guard"), dict) else {}
     baseline_selection = payload.get("baseline_selection") if isinstance(payload.get("baseline_selection"), dict) else {}
     treatment = str(payload.get("treatment") or gate.get("treatment") or "")
-    enforce_openrca_protocol = benchmark == "openrca_telecom" and (
-        "protocol_complete" in gate or isinstance(payload.get("comparisons"), dict)
-    )
+    enforce_openrca_protocol = benchmark == "openrca_telecom"
     checks = {
         "gate_passed": bool(gate.get("passed")),
         "strongest_single_baseline": str(baseline_selection.get("method") or "").startswith("strongest_single"),
@@ -122,23 +103,19 @@ def _audit_analysis(path: str | Path, readiness: dict[str, Any]) -> dict[str, An
         "tier_ready": _tier_ready(readiness, benchmark),
         "candidate_catalog_not_label_derived": not bool(payload.get("label_derived_candidate_catalog")),
     }
-    if benchmark == "telelogs_agent":
-        checks["official_tool_mode"] = bool(payload.get("official_tool_mode"))
+    if overfit_guard:
+        checks["overfit_guard_passed"] = bool(overfit_guard.get("passed"))
     if enforce_openrca_protocol:
         comparisons = payload.get("comparisons") if isinstance(payload.get("comparisons"), dict) else {}
         checks.update({
             "protocol_complete": bool(gate.get("protocol_complete")),
+            "overfit_guard_passed": bool(overfit_guard.get("passed")) and bool(
+                gate.get("overfit_guard_passed", overfit_guard.get("passed"))
+            ),
             "rca_agent_comparison": "architecture_baseline" in comparisons,
             "operational_single_comparison": "operational_single" in comparisons,
-            "same_board_diagnostic": "diagnostic_oracle" in comparisons,
         })
-    if benchmark == "telecomts":
-        checks.update({
-            "llm_mode": bool(payload.get("llm_mode")),
-            "test_split": bool(payload.get("test_split")),
-            "event_unit": bool(payload.get("event_unit")),
-            "frozen_prereg": bool(payload.get("frozen_prereg")),
-        })
+
     reasons = []
     if not checks["gate_passed"]:
         reasons.append("clear_win_gate.passed is false or missing")
@@ -148,31 +125,26 @@ def _audit_analysis(path: str | Path, readiness: dict[str, Any]) -> dict[str, An
         reasons.append(f"treatment is not recognized as MAS: {treatment or 'missing'}")
     if not checks["tier_ready"]:
         if benchmark in SUPPORTING_ONLY_BENCHMARKS:
-            reasons.append(f"{benchmark} is supporting-only evidence, not a headline or telco fallback claim tier")
+            reasons.append(f"{benchmark} is supporting-only evidence, not a headline claim tier")
         else:
             reasons.append(f"benchmark readiness is false for {benchmark}")
-    if benchmark == "telelogs_agent" and not checks.get("official_tool_mode", False):
-        reasons.append("TeleLogsAgent evidence must be official HTTP-tool mode; profile/llm staged modes are not claim evidence")
     if not checks["candidate_catalog_not_label_derived"]:
         reasons.append("candidate catalog is marked label-derived; runtime candidate universes must not come from scoring labels")
+    if "overfit_guard_passed" in checks and not checks["overfit_guard_passed"]:
+        guard_reasons = overfit_guard.get("reasons") if isinstance(overfit_guard.get("reasons"), list) else []
+        suffix = f": {'; '.join(str(item) for item in guard_reasons)}" if guard_reasons else ""
+        reasons.append(
+            "overfit guard failed or is missing; require no fitted weights, registered mechanism ablations, "
+            f"and label-safe candidate catalogs{suffix}"
+        )
     if enforce_openrca_protocol:
         if not checks.get("protocol_complete", False):
-            reasons.append("OpenRCA result does not contain the complete frozen four-system protocol")
+            reasons.append("OpenRCA result does not contain the complete frozen baseline+treatment+ablation protocol")
         if not checks.get("rca_agent_comparison", False):
             reasons.append("OpenRCA result lacks the RCA-Agent architecture comparison")
         if not checks.get("operational_single_comparison", False):
             reasons.append("OpenRCA result lacks the operational single-agent comparison")
-        if not checks.get("same_board_diagnostic", False):
-            reasons.append("OpenRCA result lacks the same-board diagnostic oracle")
-    if benchmark == "telecomts":
-        if not checks.get("llm_mode", False):
-            reasons.append("TelecomTS evidence must come from LLM mode, not profile mode")
-        if not checks.get("test_split", False):
-            reasons.append("TelecomTS development/validation output is calibration evidence, not a claim result")
-        if not checks.get("event_unit", False):
-            reasons.append("TelecomTS must be scored by independent anomaly event, not overlapping windows")
-        if not checks.get("frozen_prereg", False):
-            reasons.append("TelecomTS test evidence requires a matching frozen preregistration and algorithm ID")
+
     return {
         "path": str(path),
         "benchmark": benchmark,
@@ -187,27 +159,18 @@ def _audit_analysis(path: str | Path, readiness: dict[str, Any]) -> dict[str, An
 
 
 def _tier_ready(readiness: dict[str, Any], benchmark: str) -> bool:
-    if benchmark in HEADLINE_BENCHMARKS:
-        item = readiness.get("benchmarks", {}).get(benchmark, {})
-        return bool(item.get("ready_for_headline"))
-    if benchmark in FALLBACK_BENCHMARKS:
-        item = readiness.get("benchmarks", {}).get(benchmark, {})
-        return bool(item.get("ready_for_fallback"))
-    if benchmark in SYNTHETIC_BENCHMARKS:
-        key = benchmark if benchmark == "telecomts" else "synthetic_telco"
-        item = readiness.get("benchmarks", {}).get(key, {})
-        return bool(item.get("ready_for_synthetic_fallback"))
-    return False
+    if benchmark not in HEADLINE_BENCHMARKS:
+        return False
+    item = readiness.get("benchmarks", {}).get(benchmark, {})
+    return bool(item.get("ready_for_headline"))
 
 
 def _readiness_blockers(readiness: dict[str, Any]) -> list[str]:
     blockers = []
     for name, item in (readiness.get("benchmarks") or {}).items():
-        if name in {"synthetic_telco_v3"}:
+        if item.get("ready_for_headline"):
             continue
-        if item.get("ready_for_headline") or item.get("ready_for_fallback"):
-            continue
-        if name in HEADLINE_BENCHMARKS or name in FALLBACK_BENCHMARKS:
+        if name in HEADLINE_BENCHMARKS:
             reason = item.get("reason") or item.get("status") or "not ready"
             blockers.append(f"{name}: {reason}{_latest_attempt_note(item)}")
     return blockers
@@ -239,16 +202,6 @@ def _infer_benchmark(path: Path, payload: dict[str, Any]) -> str:
         return "openrca_telecom"
     if "rcaeval" in text:
         return "rcaeval"
-    if "telelogs_agent" in text:
-        return "telelogs_agent"
-    if "telelogs" in text:
-        return "telelogs"
-    if "telecomts" in text:
-        return "telecomts"
-    if "synthetic_telco_v4" in text:
-        return "synthetic_telco_v4"
-    if "synthetic_telco" in text:
-        return "synthetic_telco"
     return "unknown"
 
 

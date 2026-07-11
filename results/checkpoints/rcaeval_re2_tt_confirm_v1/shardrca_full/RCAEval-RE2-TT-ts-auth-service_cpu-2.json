@@ -1,0 +1,32 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_cpu-2",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-auth-service",
+  "ranked_roots": [
+    "ts-auth-service",
+    "ts-travel-service",
+    "ts-station-service",
+    "ts-ticketinfo-service",
+    "ts-preserve-service",
+    "ts-basic-service",
+    "ts-seat-service",
+    "ts-auth-mongo",
+    "ts-consign-mongo",
+    "ts-food-map-mongo",
+    "ts-price-mongo",
+    "ts-ui-dashboard",
+    "ts-order-other-mongo",
+    "ts-station-mongo",
+    "ts-train-mongo",
+    "ts-travel-mongo",
+    "ts-route-mongo"
+  ],
+  "fault_type": "cpu",
+  "accepted": true,
+  "confidence": 0.7716,
+  "latency_s": 308.81,
+  "total_tokens": 278483,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-travel-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-auth-service, margin=0.7716, threshold=0.625)"
+}

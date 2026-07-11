@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-travel-service_mem-3",
+  "runtime_case_id": "RE2-TT-804c53e59d6d",
+  "source": "RE2-TT",
+  "system": "shardrca_llmfuse",
+  "prior": "off",
+  "predicted_root": "ts-basic-service",
+  "true_root": "ts-travel-service",
+  "hit_at_1": 0,
+  "hit_at_3": 1,
+  "mrr": 0.5,
+  "total_tokens": 4632,
+  "llm_calls": 3,
+  "tool_calls": 37,
+  "latency_s": 13.44
+}

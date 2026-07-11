@@ -1,0 +1,31 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_delay-2",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-order-service",
+  "ranked_roots": [
+    "ts-order-service",
+    "ts-consign-service",
+    "ts-price-service",
+    "ts-order-other-service",
+    "ts-inside-payment-service",
+    "ts-station-service",
+    "ts",
+    "ts-ticket-office-service",
+    "ts-order-mongo",
+    "ts-consign-mongo",
+    "ts-route-service",
+    "ts-travel2-service",
+    "ts-assurance-service",
+    "ts-travel-service",
+    "ts-food-service",
+    "ts-admin-basic-info-service"
+  ],
+  "fault_type": "disk",
+  "accepted": true,
+  "confidence": 0.7094,
+  "latency_s": 236.26,
+  "total_tokens": 257241,
+  "tool_calls": 37,
+  "llm_calls": 33,
+  "notes": "Targeted evidence supports ts-order-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-order-service, margin=0.7094, threshold=0.625)"
+}

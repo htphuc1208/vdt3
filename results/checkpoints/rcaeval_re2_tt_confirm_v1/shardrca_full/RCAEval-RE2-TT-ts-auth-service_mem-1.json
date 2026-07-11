@@ -1,0 +1,33 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_mem-1",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-auth-service",
+  "ranked_roots": [
+    "ts-auth-service",
+    "ts-ticketinfo-service",
+    "ts-basic-service",
+    "ts-travel2-service",
+    "ts-train-service",
+    "ts-price-service",
+    "ts-config-mongo",
+    "ts-order-service",
+    "ts-food-map-service",
+    "ts-food-map-mongo",
+    "ts-notification-service",
+    "ts-execute-service",
+    "ts-verification-code-service",
+    "ts-station-service",
+    "ts-route-service",
+    "ts-admin-basic-info-service",
+    "ts-food-service",
+    "ts-admin-travel-service"
+  ],
+  "fault_type": "disk",
+  "accepted": true,
+  "confidence": 0.9347,
+  "latency_s": 246.08,
+  "total_tokens": 287550,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-ticketinfo-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-auth-service, margin=0.9347, threshold=0.625)"
+}

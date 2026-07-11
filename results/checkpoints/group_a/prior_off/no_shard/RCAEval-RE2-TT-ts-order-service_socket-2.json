@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_socket-2",
+  "runtime_case_id": "RE2-TT-c98241b87ba2",
+  "source": "RE2-TT",
+  "system": "no_shard",
+  "prior": "off",
+  "predicted_root": "ts-order-service",
+  "true_root": "ts-order-service",
+  "hit_at_1": 1,
+  "hit_at_3": 1,
+  "mrr": 1.0,
+  "total_tokens": 22617,
+  "llm_calls": 3,
+  "tool_calls": 4,
+  "latency_s": 10.74
+}

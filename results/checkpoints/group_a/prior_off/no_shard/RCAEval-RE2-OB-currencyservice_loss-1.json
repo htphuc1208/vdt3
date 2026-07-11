@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-OB-currencyservice_loss-1",
+  "runtime_case_id": "RE2-OB-7be1027510ec",
+  "source": "RE2-OB",
+  "system": "no_shard",
+  "prior": "off",
+  "predicted_root": "currencyservice",
+  "true_root": "currencyservice",
+  "hit_at_1": 1,
+  "hit_at_3": 1,
+  "mrr": 1.0,
+  "total_tokens": 21735,
+  "llm_calls": 3,
+  "tool_calls": 4,
+  "latency_s": 5.67
+}

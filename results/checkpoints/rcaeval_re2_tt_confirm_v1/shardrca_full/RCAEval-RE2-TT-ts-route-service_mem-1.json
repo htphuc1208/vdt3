@@ -1,0 +1,29 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-route-service_mem-1",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-seat-service",
+  "ranked_roots": [
+    "ts-seat-service",
+    "ts-ticketinfo-service",
+    "ts-admin-order-service",
+    "ts-route-service",
+    "ts-travel2-service",
+    "ts-basic-service",
+    "ts-train-service",
+    "ts-order-other-service",
+    "ts-travel-service",
+    "ts-price-service",
+    "ts-admin-travel-service",
+    "ts-food-service",
+    "ts-admin-basic-info-service",
+    "ts-consign-service"
+  ],
+  "fault_type": "disk",
+  "accepted": true,
+  "confidence": 0.29505410614917355,
+  "latency_s": 438.06,
+  "total_tokens": 285589,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-seat-service; no promotion.; rcaeval_metric_prior=mas_primary_metric_prior_secondary(root=ts-ticketinfo-service, margin=0.5032, threshold=0.625)"
+}

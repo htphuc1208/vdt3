@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_loss-3",
+  "runtime_case_id": "RE2-TT-f01f989b0b27",
+  "source": "RE2-TT",
+  "system": "shardrca_full",
+  "prior": "off",
+  "predicted_root": "ts-auth-service",
+  "true_root": "ts-auth-service",
+  "hit_at_1": 1,
+  "hit_at_3": 1,
+  "mrr": 1.0,
+  "total_tokens": 271551,
+  "llm_calls": 34,
+  "tool_calls": 37,
+  "latency_s": 243.64
+}

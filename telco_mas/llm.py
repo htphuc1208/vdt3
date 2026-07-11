@@ -140,14 +140,19 @@ class LLMClient:
         tools: Optional[list[dict]] = None,
         tool_choice: str = "auto",
         force_json: bool = False,
+        temperature: float | None = None,
+        seed: int | None = None,
     ) -> ChatResponse:
+        effective_temperature = self.settings.temperature if temperature is None else float(temperature)
+        effective_seed = self.settings.seed if seed is None else seed
         payload = {
             "model": self.settings.model,
             "messages": messages,
             "tools": tools,
             "tool_choice": tool_choice if tools else None,
             "force_json": force_json,
-            "temperature": self.settings.temperature,
+            "temperature": effective_temperature,
+            "seed": effective_seed,
         }
         cache_file = None
         if self.cache_enabled:
@@ -169,29 +174,44 @@ class LLMClient:
             msg = self._responder(messages, tools)
             resp = _parse_assistant_message(msg, UsageStats(llm_calls=1))
         else:
-            resp = self._call_openai(messages, tools, tool_choice, force_json)
+            resp = self._call_openai(
+                messages,
+                tools,
+                tool_choice,
+                force_json,
+                temperature=effective_temperature,
+                seed=effective_seed,
+            )
 
         if cache_file is not None:
             with open(cache_file, "w") as fh:
                 json.dump(_response_to_dict(resp), fh)
         return resp
 
-    def _call_openai(self, messages, tools, tool_choice, force_json) -> ChatResponse:
+    def _call_openai(
+        self,
+        messages,
+        tools,
+        tool_choice,
+        force_json,
+        *,
+        temperature: float,
+        seed: int | None,
+    ) -> ChatResponse:
         client = self._openai_client()
         kwargs: dict[str, Any] = {
             "model": self.settings.model,
             "messages": messages,
-            "temperature": self.settings.temperature,
+            "temperature": temperature,
         }
+        if seed is not None:
+            kwargs["seed"] = int(seed)
         if tools:
             kwargs["tools"] = tools
             kwargs["tool_choice"] = tool_choice
         if force_json:
             kwargs["response_format"] = {"type": "json_object"}
-        try:
-            completion = client.chat.completions.create(**kwargs)
-        except Exception as exc:  # pragma: no cover - network failure path
-            raise LLMError(f"LLM request failed: {exc}") from exc
+        completion = self._create_with_retry(client, kwargs)
 
         choice = completion.choices[0]
         message = choice.message
@@ -216,6 +236,51 @@ class LLMClient:
             usage=usage,
             finish_reason=choice.finish_reason or "stop",
         )
+
+    def _create_with_retry(self, client, kwargs: dict) -> Any:
+        """Call the chat completion API with backoff on rate limits / transient errors.
+
+        This is transport-layer robustness only: it does not change prompts,
+        temperature, tools, or any decision logic. Rate-limit (429) and transient
+        server/connection errors are retried with exponential backoff plus jitter
+        so a token-per-minute ceiling throttles throughput instead of crashing a run.
+        """
+        import random
+
+        max_attempts = int(os.getenv("TELCO_LLM_MAX_RETRIES", "8"))
+        base_delay = float(os.getenv("TELCO_LLM_RETRY_BASE", "2.0"))
+        max_delay = float(os.getenv("TELCO_LLM_RETRY_MAX", "60.0"))
+        last_exc: Exception | None = None
+        for attempt in range(max_attempts):
+            try:
+                return client.chat.completions.create(**kwargs)
+            except Exception as exc:  # pragma: no cover - network failure path
+                last_exc = exc
+                status = getattr(exc, "status_code", None)
+                name = type(exc).__name__
+                retriable = (
+                    status in (429, 500, 502, 503, 504)
+                    or "RateLimit" in name
+                    or "APIConnection" in name
+                    or "APITimeout" in name
+                    or "InternalServer" in name
+                )
+                if not retriable or attempt == max_attempts - 1:
+                    break
+                delay = min(max_delay, base_delay * (2 ** attempt))
+                delay += random.uniform(0, delay * 0.25)
+                # Honour an explicit Retry-After hint when present.
+                retry_after = None
+                resp = getattr(exc, "response", None)
+                if resp is not None:
+                    try:
+                        retry_after = float(resp.headers.get("retry-after"))
+                    except Exception:
+                        retry_after = None
+                if retry_after is not None:
+                    delay = max(delay, retry_after)
+                time.sleep(delay)
+        raise LLMError(f"LLM request failed: {last_exc}") from last_exc
 
     # -- agentic tool-use loop ----------------------------------------------
     def run_agent(

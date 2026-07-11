@@ -1,0 +1,33 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_delay-1",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-auth-service",
+  "ranked_roots": [
+    "ts-auth-service",
+    "ts-inside-payment-service",
+    "ts-assurance-mongo",
+    "ts-ticket-office-mongo",
+    "ts-preserve-other-service",
+    "ts-order-other-service",
+    "ts-consign-service",
+    "ts-security-service",
+    "ts-food-service",
+    "ts-auth-mongo",
+    "ts-payment-service",
+    "ts-assurance-service",
+    "ts-config-service",
+    "ts-ui-dashboard",
+    "ts-food-map-service",
+    "ts-travel2-service",
+    "ts-order-service",
+    "ts-station-mongo"
+  ],
+  "fault_type": "delay",
+  "accepted": true,
+  "confidence": 0.8148008834238538,
+  "latency_s": 267.75,
+  "total_tokens": 278398,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-inside-payment-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-auth-service, margin=0.6324, threshold=0.625)"
+}

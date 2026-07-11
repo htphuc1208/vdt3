@@ -1,0 +1,31 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_mem-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-order-service",
+  "ranked_roots": [
+    "ts-order-service",
+    "ts-train-service",
+    "ts-seat-service",
+    "ts-travel-service",
+    "ts-price-service",
+    "ts-travel2-service",
+    "ts-admin-travel-service",
+    "ts-security-service",
+    "ts-user-service",
+    "ts-food-map-service",
+    "ts-admin-user-service",
+    "ts-route-service",
+    "ts-basic-service",
+    "ts-admin-basic-info-service",
+    "ts-execute-service",
+    "ts-inside-payment-service"
+  ],
+  "fault_type": "disk",
+  "accepted": true,
+  "confidence": 0.7138,
+  "latency_s": 290.72,
+  "total_tokens": 288632,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-train-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-order-service, margin=0.7138, threshold=0.625)"
+}

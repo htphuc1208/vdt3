@@ -1,9 +1,9 @@
-"""Offline (no-LLM) fit of local-fusion weights on a disjoint RCAEval-hard dev split.
+"""Offline (no-LLM) diagnostic fit of local-fusion weights on RCAEval-hard validation data.
 
 This exercises the full fit -> freeze -> load pipeline without spending LLM budget
 and without touching any locked/confirmatory data. It fits the weights that affect
-the deterministic ``fuse_candidate_evidence`` path (modality reliability + modality
-convergence bonuses), which — unlike ``correlation_rho``/``temperature`` — actually
+the deterministic local-fusion path (modality reliability plus optional topology
+and temporal priors). Unlike ``correlation_rho``/``temperature``, those levers can
 change the ranking and therefore Hit@1.
 
 Scientific status (honest):
@@ -11,6 +11,9 @@ Scientific status (honest):
   synthesizer; these weights are a validated prior, not a confirmatory result.
 - The dev/val cases are selected disjoint from the locked v7 holdout AND the C
   high-volume confirmatory split, so nothing here contaminates a future claim.
+- The default confirmatory protocol does not consume this output. Any future use
+  in a claim requires a new preregistration naming the validation split and the
+  frozen artifact before the holdout is run.
 """
 from __future__ import annotations
 
@@ -146,11 +149,11 @@ def fit(
     val: list[LocalFusionCase],
     *,
     boost_grid: tuple[float, ...] = (1.0,),
-    convergence_grid: tuple[float, ...] = (0.18,),
+    convergence_grid: tuple[float, ...] = (0.0,),
     gamma_grid: tuple[float, ...] = (0.0, 2.0),
     beta_grid: tuple[float, ...] = (0.0, 0.5, 1.0, 2.0, 4.0, 8.0),
-    fit_on: str = "rcaeval_hard_dev_offline",
-    version: str = "local_fusion_fit_v3_temporal",
+    fit_on: str = "declared_rcaeval_validation_split",
+    version: str = "validation_local_fusion_temporal_grid",
 ) -> tuple[FusionWeights, dict]:
     baseline = FusionWeights.default()
     dev_base = _score(dev, baseline)
@@ -162,7 +165,13 @@ def fit(
             for gamma in gamma_grid:
                 for beta in beta_grid:
                     score = _score(dev, _weights_for(boost, bonus, gamma, beta))
-                    trials.append({"boost": boost, "topology_gamma": gamma, "temporal_beta": beta, **score})
+                    trials.append({
+                        "boost": boost,
+                        "deprecated_convergence_modality_bonus": bonus,
+                        "topology_gamma": gamma,
+                        "temporal_beta": beta,
+                        **score,
+                    })
                     if (score["hit_at_1"], score["mrr"]) > (best["hit_at_1"], best["mrr"]):
                         best, best_boost, best_bonus, best_gamma, best_beta = score, boost, bonus, gamma, beta
     fitted = _weights_for(
@@ -176,7 +185,7 @@ def fit(
         "dev_fitted": best,
         "val_baseline": _score(val, baseline),
         "val_fitted": _score(val, fitted),
-        "selected": {"modality_boost": best_boost, "convergence_modality_bonus": best_bonus,
+        "selected": {"modality_boost": best_boost, "deprecated_convergence_modality_bonus": best_bonus,
                      "topology_gamma": best_gamma, "temporal_beta": best_beta},
         "n_dev": len(dev),
         "n_val": len(val),
@@ -208,8 +217,8 @@ def main(argv: list[str] | None = None) -> int:
         "results/prereg_v7_holdout20_2026-07-03.json",
         "results/prereg_high_volume_draft.json",
     ], help="preregs whose runtime_case_ids must be held out of dev/val")
-    parser.add_argument("--out-weights", default="results/weights/local_fusion_fit_v3_temporal.json")
-    parser.add_argument("--out-report", default="results/local_fusion_fit_v3_report.json")
+    parser.add_argument("--out-weights", default="results/weights/validation_local_fusion_temporal.json")
+    parser.add_argument("--out-report", default="results/validation_local_fusion_report.json")
     parser.add_argument("--graph-only", action="store_true",
                         help="fit only on cases that have a trace dependency graph (fair test of topology)")
     args = parser.parse_args(argv)

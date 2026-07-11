@@ -1,0 +1,20 @@
+{
+  "fingerprint": "ac04b6921e3c1ebd59f513fdb8d87bb53721f0671d98e0707e7d5de6f6851238",
+  "row": {
+    "row_id": 42,
+    "task_index": "task_5",
+    "instruction": "On May 30, 2020, between 00:00 to 00:30, a single failure was observed. However, both the exact time of the root cause occurrence and the component involved in this failure are currently unknown. You are tasked with identifying the root cause occurrence datetime and the root cause component.",
+    "prediction": "{\"1\": {\"root cause occurrence datetime\": \"2020-05-30 00:18:02\", \"root cause component\": \"os_021\"}}",
+    "scoring_points": "The only root cause occurrence time is within 1 minutes (i.e., <=1min) of 2020-05-30 00:13:00\nThe only predicted root cause component is os_021\n",
+    "passed": "os_021",
+    "failed": "2020-05-30 00:13:00",
+    "score": 0.5,
+    "strict_correct": false,
+    "system": "single_react_sc",
+    "latency_s": 18.18,
+    "total_tokens": 20483,
+    "llm_calls": 9,
+    "tool_calls": 9,
+    "volume_bin": "low"
+  }
+}

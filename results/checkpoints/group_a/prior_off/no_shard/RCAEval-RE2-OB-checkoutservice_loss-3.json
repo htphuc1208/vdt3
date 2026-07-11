@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE2-OB-checkoutservice_loss-3",
+  "runtime_case_id": "RE2-OB-5d359f7341c1",
+  "source": "RE2-OB",
+  "system": "no_shard",
+  "prior": "off",
+  "predicted_root": "paymentservice",
+  "true_root": "checkoutservice",
+  "hit_at_1": 0,
+  "hit_at_3": 1,
+  "mrr": 0.5,
+  "total_tokens": 21906,
+  "llm_calls": 3,
+  "tool_calls": 4,
+  "latency_s": 5.45
+}

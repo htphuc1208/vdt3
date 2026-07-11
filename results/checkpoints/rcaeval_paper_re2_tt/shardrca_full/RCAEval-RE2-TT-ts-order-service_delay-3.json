@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-order-service_delay-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-config-service",
+  "ranked_roots": [
+    "ts-config-service",
+    "ts-food-map-service",
+    "ts-order-service",
+    "ts-order-other-service",
+    "ts-inside-payment-service",
+    "ts-station-service",
+    "ts-travel2-service",
+    "ts-consign-price-mongo",
+    "ts-security-mongo",
+    "ts-travel2-mongo"
+  ],
+  "fault_type": "unknown",
+  "accepted": true,
+  "confidence": 0.37816989395097117,
+  "latency_s": 185.67,
+  "total_tokens": 254072,
+  "tool_calls": 37,
+  "llm_calls": 33,
+  "notes": "Targeted evidence supports ts-config-service; no promotion."
+}

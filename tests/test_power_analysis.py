@@ -12,6 +12,7 @@ from telco_mas.evaluation.stats import (
     _norm_ppf,
     mcnemar_exact_power,
     mcnemar_required_pairs,
+    wilson_ci,
 )
 
 
@@ -19,6 +20,14 @@ def test_norm_ppf_known_quantiles():
     assert math.isclose(_norm_ppf(0.975), 1.959964, abs_tol=1e-4)
     assert math.isclose(_norm_ppf(0.80), 0.841621, abs_tol=1e-4)
     assert math.isclose(_norm_ppf(0.5), 0.0, abs_tol=1e-6)
+
+
+def test_wilson_ci_respects_confidence_level():
+    _, lo90, hi90 = wilson_ci(6, 10, confidence=0.90)
+    _, lo99, hi99 = wilson_ci(6, 10, confidence=0.99)
+
+    assert lo99 < lo90
+    assert hi99 > hi90
 
 
 def test_required_pairs_grows_as_effect_shrinks():

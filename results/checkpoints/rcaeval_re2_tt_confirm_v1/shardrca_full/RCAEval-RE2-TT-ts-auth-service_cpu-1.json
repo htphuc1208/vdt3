@@ -1,0 +1,32 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_cpu-1",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-auth-service",
+  "ranked_roots": [
+    "ts-auth-service",
+    "ts-travel-service",
+    "ts-seat-service",
+    "ts-order-other-service",
+    "ts-security-mongo",
+    "ts-consign-price-mongo",
+    "ts-preserve-mongo",
+    "ts-contacts-service",
+    "ts-inside-payment-service",
+    "ts-consign-service",
+    "ts-auth-mongo",
+    "ts-order-other-mongo",
+    "ts-preserve-other-service",
+    "ts-route-service",
+    "ts-basic-service",
+    "ts-consign-mongo",
+    "ts-order-service"
+  ],
+  "fault_type": "cpu",
+  "accepted": true,
+  "confidence": 0.9534,
+  "latency_s": 363.39,
+  "total_tokens": 276064,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-travel-service; no promotion.; rcaeval_metric_prior=strong_metric_prior(root=ts-auth-service, margin=0.9534, threshold=0.625)"
+}

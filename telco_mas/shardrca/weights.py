@@ -1,17 +1,11 @@
 """Versioned, freezable fusion/consensus weights.
 
-Rationale (addresses the reproducibility critique): the fusion and convergence
-constants used to be hard-coded magic numbers scattered across ``fusion.py``.
-That makes it impossible to (a) fit them on a validation split, (b) *freeze*
-them before a confirmatory run, or (c) tell a reviewer which numbers produced a
-result. This module turns them into a single artifact that can be loaded from a
-JSON file (``SHARDRCA_WEIGHTS`` env var or an explicit path), carries provenance,
-and defaults to the historical constants so nothing changes until a fit is frozen.
-
-The default is a strict no-op: ``redundancy_lambda=0`` and ``temperature=1``
-reduce the correlation-aware pool exactly to the previous equal-weight
-product-of-experts, so existing behaviour/tests are unchanged until a validation
-fit is deliberately loaded.
+This module centralizes every optional fusion/reranking lever that may be loaded
+from a frozen JSON artifact (``SHARDRCA_WEIGHTS`` env var or explicit path). The
+confirmatory default is deliberately no-fit: correlation discount is off,
+temperature is 1, modality reliability is off, and causal rerank strengths are
+zero. Candidate fusion itself is additive signed evidence; historical
+``convergence_*`` fields are retained only so old artifacts deserialize.
 """
 from __future__ import annotations
 
@@ -34,16 +28,16 @@ _DEFAULT_MODALITY_WEIGHTS: dict[str, float] = {
 
 @dataclass(frozen=True)
 class FusionWeights:
-    """All tunable fusion/convergence constants in one freezable place.
+    """All optional fusion/reranking constants in one freezable place.
 
-    ``redundancy_lambda`` discounts workers whose candidate scope overlaps other
-    workers (correlated evidence must not be multiplied as if independent).
+    ``correlation_rho`` discounts positively correlated worker posterior vectors
+    (correlated evidence must not be multiplied as if independent).
     ``temperature`` > 1 flattens the fused posterior to fight product-of-experts
     overconfidence; the default 1.0 is a no-op.
     """
 
     version: str = "default_v0"
-    fit_on: str = "none (historical constants, not fitted)"
+    fit_on: str = "none (confirmatory no-fit defaults)"
     provenance: str = ""
     # Correlation-aware log-opinion-pool controls (B).
     # ``correlation_rho`` in [0, 1] is how much observed cross-worker *agreement*
@@ -55,9 +49,9 @@ class FusionWeights:
     # Per-worker modality reliability. rho/temperature are monotone transforms of
     # the fused posterior and cannot change the argmax (hence cannot move Hit@1);
     # they only recalibrate confidence. Unequal per-modality weights DO change the
-    # ranking, which is the mechanism that can overturn the same-board oracle.
-    # Off by default so the frozen equal-weight OpenRCA result stays reproducible;
-    # a validation-fitted artifact turns it on.
+    # ranking, which is the mechanism that can overturn a stronger single-agent baseline.
+    # Off by default; a validation artifact may turn it on only outside the
+    # current no-fit confirmatory protocol.
     modality_reliability_enabled: bool = False
     # Topology-aware re-ranking strength: score *= (1 + gamma * explanatory_coverage)
     # over the dependency graph. 0 = no-op; > 0 lets an upstream cause outrank a
@@ -67,9 +61,10 @@ class FusionWeights:
     # where precedence favours the earliest-onset component (a root precedes its
     # symptoms). 0 = no-op; also a ranking-changing lever.
     temporal_beta: float = 0.0
-    # Candidate-evidence convergence bonuses (fuse_candidate_evidence).
-    convergence_modality_bonus: float = 0.18
-    convergence_shard_bonus: float = 0.05
+    # Deprecated compatibility fields. ``fuse_candidate_evidence`` no longer
+    # consumes convergence bonuses; local evidence is fused additively.
+    convergence_modality_bonus: float = 0.0
+    convergence_shard_bonus: float = 0.0
     modality_weights: dict[str, float] = field(default_factory=lambda: dict(_DEFAULT_MODALITY_WEIGHTS))
 
     def modality_weight(self, modality: str) -> float:

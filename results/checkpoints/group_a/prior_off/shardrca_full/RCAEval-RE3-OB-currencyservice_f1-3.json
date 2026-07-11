@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE3-OB-currencyservice_f1-3",
+  "runtime_case_id": "RE3-OB-9db947bc931a",
+  "source": "RE3-OB",
+  "system": "shardrca_full",
+  "prior": "off",
+  "predicted_root": "frontend",
+  "true_root": "currencyservice",
+  "hit_at_1": 0,
+  "hit_at_3": 1,
+  "mrr": 0.3333,
+  "total_tokens": 17066,
+  "llm_calls": 6,
+  "tool_calls": 7,
+  "latency_s": 38.06
+}

@@ -1,0 +1,20 @@
+{
+  "fingerprint": "ac04b6921e3c1ebd59f513fdb8d87bb53721f0671d98e0707e7d5de6f6851238",
+  "row": {
+    "row_id": 7,
+    "task_index": "task_7",
+    "instruction": "During the specified time range of May 22, 2020, from 00:30 to 01:00, the system experienced a single failure. The exact time of occurrence, affected component, and the underlying reason for this failure are currently unknown. Please pinpoint the root cause occurrence datetime, the root cause component, and the root cause reason.",
+    "prediction": "{\"1\": {\"root cause occurrence datetime\": \"2020-05-22 00:48:26\", \"root cause component\": \"os_007\", \"root cause reason\": \"CPU fault\"}}",
+    "scoring_points": "The only root cause occurrence time is within 1 minutes (i.e., <=1min) of 2020-05-22 00:48:00\nThe only predicted root cause component is docker_001\nThe only predicted root cause reason is CPU fault\n",
+    "passed": "CPU fault\n2020-05-22 00:48:00",
+    "failed": "docker_001",
+    "score": 0.67,
+    "strict_correct": false,
+    "system": "single_react_sc",
+    "latency_s": 24.56,
+    "total_tokens": 20829,
+    "llm_calls": 9,
+    "tool_calls": 9,
+    "volume_bin": "low"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_loss-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-travel2-service",
+  "ranked_roots": [
+    "ts-travel2-service",
+    "ts-food-service",
+    "ts-consign-service",
+    "ts-order-service",
+    "ts-inside-payment-service",
+    "ts-assurance-service",
+    "ts-consign-price-service",
+    "ts-travel-mongo",
+    "ts-order-other-service",
+    "ts-preserve-service"
+  ],
+  "fault_type": "db",
+  "accepted": true,
+  "confidence": 0.18006039468076168,
+  "latency_s": 203.85,
+  "total_tokens": 278301,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-travel2-service; no promotion."
+}

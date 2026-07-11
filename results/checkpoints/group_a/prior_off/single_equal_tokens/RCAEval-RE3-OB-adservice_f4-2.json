@@ -1,0 +1,16 @@
+{
+  "case_id": "RCAEval-RE3-OB-adservice_f4-2",
+  "runtime_case_id": "RE3-OB-8c99931ee1e5",
+  "source": "RE3-OB",
+  "system": "single_equal_tokens",
+  "prior": "off",
+  "predicted_root": "cartservice",
+  "true_root": "adservice",
+  "hit_at_1": 0,
+  "hit_at_3": 1,
+  "mrr": 0.5,
+  "total_tokens": 5209,
+  "llm_calls": 3,
+  "tool_calls": 4,
+  "latency_s": 8.37
+}

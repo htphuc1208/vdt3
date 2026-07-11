@@ -1,9 +1,11 @@
 """Fit and freeze ShardRCA fusion weights on a validation split.
 
-Scientific contract (PLAN v6 §2 guardrail 1): weights are fitted **only** on
-development/validation data and then frozen; the frozen artifact is what a
-confirmatory run loads via ``SHARDRCA_WEIGHTS``. This module never reads a locked
-holdout — pass its case IDs via ``--forbid`` and the fitter aborts if any appear.
+Scientific contract (PLAN v6 guardrails): weights are fitted **only** on declared
+development/validation data and then frozen as exploratory artifacts. Current
+confirmatory runners use default no-fit weights and reject ``SHARDRCA_WEIGHTS``
+unless a future preregistration explicitly permits a validation-frozen artifact.
+This module never reads a locked holdout -- pass its case IDs via ``--forbid`` and
+the fitter aborts if any appear.
 
 What actually moves accuracy: ``correlation_rho`` and ``temperature`` are monotone
 transforms of the fused posterior and cannot change the argmax, so they are tuned

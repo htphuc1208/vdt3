@@ -1,0 +1,25 @@
+{
+  "case_id": "RCAEval-RE2-TT-ts-auth-service_delay-3",
+  "system": "rcaeval_shardrca_full",
+  "root": "ts-order-service",
+  "ranked_roots": [
+    "ts-order-service",
+    "ts-assurance-service",
+    "ts-payment-service",
+    "ts-inside-payment-service",
+    "ts-contacts-service",
+    "ts-price-service",
+    "ts-consign-service",
+    "ts-auth-service",
+    "ts-user-mongo",
+    "ts-consign-price-mongo"
+  ],
+  "fault_type": "db",
+  "accepted": true,
+  "confidence": 0.47807562136339005,
+  "latency_s": 189.09,
+  "total_tokens": 270651,
+  "tool_calls": 37,
+  "llm_calls": 34,
+  "notes": "Targeted evidence supports ts-order-service; no promotion."
+}
